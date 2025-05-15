@@ -1,0 +1,3023 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mega Sena Power Tool Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1, h2, h3 {
+            color: #0066cc;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #ddd;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .tab.active {
+            background-color: #0066cc;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+            gap: 5px;
+            margin: 15px 0;
+        }
+        .number-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 1px solid #ddd;
+            background-color: white;
+            color: #666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .number-btn.selected {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #2563eb;
+        }
+        .quadrants-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 15px 0;
+        }
+        .quadrant {
+            padding: 20px;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .quadrant h3 {
+            margin: 0 0 15px;
+            font-size: 18px;
+            color: #333;
+        }
+        .quadrant-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 48px);
+            grid-template-rows: repeat(3, auto);
+            gap: 10px;
+            justify-content: center;
+        }
+        .quadrant-1 {
+            background-color: #F2F2F2;
+            background-image: linear-gradient(45deg, rgba(0, 0, 0, 0.05) 25%, transparent 25%, transparent 50%, rgba(0, 0, 0, 0.05) 50%, rgba(0, 0, 0, 0.05) 75%, transparent 75%, transparent);
+            background-size: 20px 20px;
+        }
+        .quadrant-2 {
+            background-color: #E2EFDA;
+            background-image: linear-gradient(45deg, rgba(0, 0, 0, 0.05) 25%, transparent 25%, transparent 50%, rgba(0, 0, 0, 0.05) 50%, rgba(0, 0, 0, 0.05) 75%, transparent 75%, transparent);
+            background-size: 20px 20px;
+        }
+        .quadrant-3 {
+            background-color: #EDEDED;
+            background-image: linear-gradient(45deg, rgba(0, 0, 0, 0.05) 25%, transparent 25%, transparent 50%, rgba(0, 0, 0, 0.05) 50%, rgba(0, 0, 0, 0.05) 75%, transparent 75%, transparent);
+            background-size: 20px 20px;
+        }
+        .quadrant-4 {
+            background-color: #FCE4D6;
+            background-image: linear-gradient(45deg, rgba(0, 0, 0, 0.05) 25%, transparent 25%, transparent 50%, rgba(0, 0, 0, 0.05) 50%, rgba(0, 0, 0, 0.05) 75%, transparent 75%, transparent);
+            background-size: 20px 20px;
+        }
+        .filter-section {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .filter-option {
+            padding: 8px 12px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .filter-option.selected {
+            background-color: #3b82f6;
+            color: white;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        button:hover:not(:disabled) {
+            background-color: #0055aa;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .result-item {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .number-ball {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            border-radius: 50%;
+            background-color: #e5e7eb;
+            color: #1f2937;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .number-ball.match {
+            background-color: #10b981;
+            color: white;
+        }
+        .number-ball.hot {
+            background-color: #ef4444;
+            color: white;
+        }
+        .number-ball.cold {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .hidden {
+            display: none;
+        }
+        .error-message, .success-message {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .error-message {
+            color: #d32f2f;
+            background-color: #ffebee;
+        }
+        .success-message {
+            color: #2e7d32;
+            background-color: #e8f5e9;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.3);
+            border-radius: 50%;
+            border-top-color: #0066cc;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #fileInfo {
+            margin: 10px 0;
+            font-style: italic;
+            color: #666;
+            font-size: 14px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .stat-item {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-count {
+            font-size: 18px;
+            font-weight: bold;
+            display: block;
+        }
+        .result-badge {
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin-left: 10px;
+            font-size: 12px;
+        }
+        .sena { background-color: #4CAF50; color: white; }
+        .quina { background-color: #2196F3; color: white; }
+        .quadra { background-color: #ff9800; color: white; }
+        .terno { background-color: #9C27B0; color: white; }
+        .duque { background-color: #607D8B; color: white; }
+        .as { background-color: #8B4513; color: white; }
+        .zero { background-color: #e0e0e0; color: #666; }
+        .manual-input-section {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .manual-input-section input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .check-container {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .check-api, .check-manual {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .check-api h3, .check-manual h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+        .check-api input, .check-manual input {
+            width: calc(100% - 16px);
+            margin-bottom: 10px;
+        }
+        .check-api button, .check-manual button {
+            width: 100%;
+        }
+        #drawResultDisplay {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+        #drawResultDisplay p {
+            margin: 5px 0;
+        }
+        .config-section {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .config-section label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        .config-section select, 
+        .config-section input {
+            padding: 8px;
+            width: 100%;
+            max-width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        /* Estilos para a nova aba de Filtro Estatístico */
+        .resultado-analise {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        .resultado-analise th, .resultado-analise td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .resultado-analise th {
+            background-color: #0066cc;
+            color: white;
+        }
+        
+        .resultado-analise tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        /* Estilos para a nova aba de Scanner */
+        .scanner-section {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        
+        .scanner-result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+        }
+        
+        .scanner-result h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+        
+        .scanner-result-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .scanner-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        @media screen and (max-width: 768px) {
+            .quadrants-container {
+                grid-template-columns: 1fr;
+            }
+            .quadrant-grid {
+                grid-template-columns: repeat(5, 40px);
+                gap: 8px;
+            }
+            .number-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 14px;
+            }
+            .tab {
+                flex: 1 1 auto;
+                text-align: center;
+                margin-bottom: 5px;
+            }
+            .check-container {
+                flex-direction: column;
+            }
+            .check-api, .check-manual {
+                width: 100%;
+            }
+        }
+        @media screen and (max-width: 480px) {
+            .quadrant-grid {
+                grid-template-columns: repeat(5, 32px);
+                gap: 6px;
+            }
+            .number-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
+            }
+            .filter-options {
+                flex-direction: column;
+            }
+            .filter-option {
+                width: 100%;
+                text-align: center;
+            }
+            .number-ball {
+                width: 25px;
+                height: 25px;
+                line-height: 25px;
+                font-size: 10px;
+            }
+            .manual-input-section input {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mega Sena Power Tool Pro</h1>
+
+        <div class="tabs">
+            <div class="tab active" onclick="openTab('tab1')">Seleção</div>
+            <div class="tab" onclick="openTab('tab2')">Desdobramento</div>
+            <div class="tab" onclick="openTab('tab3')">Filtros</div>
+            <div class="tab" onclick="openTab('tab5')">Conferir</div>
+            <div class="tab" onclick="openTab('tab6')">Estatísticas</div>
+            <div class="tab" onclick="openTab('tab7')">Filtro Estatístico</div>
+            <div class="tab" onclick="openTab('tab8')">Scanner</div>
+        </div>
+
+        <div id="tab1" class="tab-content active">
+            <h2>Selecione suas dezenas (6-60 números)</h2>
+            <div class="quadrants-container">
+                <div class="quadrant quadrant-1">
+                    <h3>Q1</h3>
+                    <div class="quadrant-grid" id="quadrant1Grid"></div>
+                </div>
+                <div class="quadrant quadrant-2">
+                    <h3>Q2</h3>
+                    <div class="quadrant-grid" id="quadrant2Grid"></div>
+                </div>
+                <div class="quadrant quadrant-3">
+                    <h3>Q3</h3>
+                    <div class="quadrant-grid" id="quadrant3Grid"></div>
+                </div>
+                <div class="quadrant quadrant-4">
+                    <h3>Q4</h3>
+                    <div class="quadrant-grid" id="quadrant4Grid"></div>
+                </div>
+            </div>
+            <div>
+                <button onclick="selectAllNumbers()">Surpresinha</button>
+                <button onclick="clearSelection()">Limpar</button>
+            </div>
+            <div>
+                <p>Dezenas selecionadas: <span id="selectedCount">0</span></p>
+                <div id="selectedNumbers"></div>
+            </div>
+            
+            <div id="selectedNumbersAnalysis" class="filter-section" style="margin-top: 20px; display: none;">
+                <h3>Análise das Dezenas Selecionadas</h3>
+                <div id="analysisContent"></div>
+            </div>
+        </div>
+
+        <div id="tab2" class="tab-content">
+            <h2>Configuração de Desdobramento</h2>
+            <div>
+                <label for="combinationsCount">Número de combinações:</label>
+                <input type="number" id="combinationsCount" min="1" max="1000" value="100">
+            </div>
+            <div>
+                <button id="generateButton" onclick="generateCombinations()">Gerar Combinações</button>
+                <button id="exportButton" onclick="exportToTxt()">Exportar para TXT</button>
+                <button onclick="clearCombinations()">Limpar Combinações</button>
+            </div>
+            <div id="generationStats"></div>
+            <div>
+                <p>Combinações geradas: <span id="filteredCount">0</span></p>
+                <div id="results"></div>
+            </div>
+        </div>
+
+        <div id="tab3" class="tab-content">
+            <h2>Filtros Estatísticos</h2>
+            <div class="filter-section">
+                <h3>Filtro 1: Par/Ímpar</h3>
+                <p>Distribuição mais comum: 3 pares e 3 ímpares</p>
+                <div class="filter-options" id="parImparOptions">
+                    <div class="filter-option selected" data-value="3-3">3P-3I</div>
+                    <div class="filter-option selected" data-value="2-4">2P-4I</div>
+                    <div class="filter-option selected" data-value="4-2">4P-2I</div>
+                    <div class="filter-option" data-value="1-5">1P-5I</div>
+                    <div class="filter-option" data-value="5-1">5P-1I</div>
+                    <div class="filter-option" data-value="0-6">0P-6I</div>
+                    <div class="filter-option" data-value="6-0">6P-0I</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 2: Soma das Dezenas</h3>
+                <p>30,8%: 186-226 | 24,4%: 145-185 | 24,2%: 227-267 | 9,4%: 104-144</p>
+                <div class="filter-options" id="somaOptions">
+                    <div class="filter-option selected" data-value="186-226">186-226</div>
+                    <div class="filter-option selected" data-value="145-185">145-185</div>
+                    <div class="filter-option selected" data-value="227-267">227-267</div>
+                    <div class="filter-option selected" data-value="104-144">104-144</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 3: Dezenas Repetidas</h3>
+                <p>42,5%: 0 repetida | 52,5%: 1 repetida | 2,5%: 2+ repetidas</p>
+                <div class="filter-options" id="repetidasOptions">
+                    <div class="filter-option selected" data-value="0">0 repetida</div>
+                    <div class="filter-option" data-value="1">1 repetida</div>
+                    <div class="filter-option" data-value="2">2+ repetidas</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 4: Fibonacci</h3>
+                <p>35%: 0 | 35%: 1 | 27,5%: 2 | 2,5%: 3</p>
+                <div class="filter-options" id="fibonacciOptions">
+                    <div class="filter-option selected" data-value="0">0 Fibonacci</div>
+                    <div class="filter-option selected" data-value="1">1 Fibonacci</div>
+                    <div class="filter-option selected" data-value="2">2 Fibonacci</div>
+                    <div class="filter-option" data-value="3">3 Fibonacci</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 5: Números Primos</h3>
+                <p>10%: 0 | 47,5%: 1 | 27,5%: 2 | 12,5%: 3 | 2,5%: 4</p>
+                <div class="filter-options" id="primosOptions">
+                    <div class="filter-option selected" data-value="0">0 primo</div>
+                    <div class="filter-option selected" data-value="1">1 primo</div>
+                    <div class="filter-option selected" data-value="2">2 primos</div>
+                    <div class="filter-option selected" data-value="3">3 primos</div>
+                    <div class="filter-option" data-value="4">4 primos</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 6: Moldura</h3>
+                <p>30%: 3+ | 27,5%: 4 | 27,5%: 2 | 10%: 1</p>
+                <div class="filter-options" id="molduraOptions">
+                    <div class="filter-option selected" data-value="3">3+ moldura</div>
+                    <div class="filter-option selected" data-value="4">4 moldura</div>
+                    <div class="filter-option selected" data-value="2">2 moldura</div>
+                    <div class="filter-option" data-value="1">1 moldura</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 7: Miolo</h3>
+                <p>30%: 3+ | 27,5%: 4 | 27,5%: 2 | 5%: 1</p>
+                <div class="filter-options" id="mioloOptions">
+                    <div class="filter-option selected" data-value="3">3+ miolo</div>
+                    <div class="filter-option selected" data-value="4">4 miolo</div>
+                    <div class="filter-option selected" data-value="2">2 miolo</div>
+                    <div class="filter-option" data-value="1">1 miolo</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 8: Múltiplos de 3</h3>
+                <p>42,5%: 2 | 35%: 1 | 17,5%: 3 | 2,5%: 0 ou 4</p>
+                <div class="filter-options" id="multiplos3Options">
+                    <div class="filter-option selected" data-value="2">2 múltiplos</div>
+                    <div class="filter-option selected" data-value="1">1 múltiplo</div>
+                    <div class="filter-option selected" data-value="3">3 múltiplos</div>
+                    <div class="filter-option" data-value="0">0 múltiplos</div>
+                    <div class="filter-option" data-value="4">4 múltiplos</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 9: Quadrantes</h3>
+                <p>Normalmente as dezenas estão distribuídas em 3-4 quadrantes</p>
+                <div class="filter-options" id="quadrantesOptions">
+                    <div class="filter-option" data-value="3">3 quadrantes</div>
+                    <div class="filter-option selected" data-value="4">4 quadrantes</div>
+                    <div class="filter-option" data-value="2">2 quadrantes</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 10: Linhas Horizontais</h3>
+                <p>Distribuição das dezenas em linhas horizontais (L1:01-10, L2:11-20, ..., L6:51-60)</p>
+                <div class="filter-options" id="linhasOptions">
+                    <div class="filter-option" data-value="3">3 linhas</div>
+                    <div class="filter-option selected" data-value="4">4 linhas</div>
+                    <div class="filter-option selected" data-value="5">5 linhas</div>
+                    <div class="filter-option" data-value="6">6 linhas</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 11: Dezenas Sequenciais</h3>
+                <p>Controla a quantidade de números consecutivos na combinação</p>
+                <div class="filter-options" id="sequenciaisOptions">
+                    <div class="filter-option selected" data-value="0">0 (Zero) Sequência</div>
+                    <div class="filter-option" data-value="2">2 (Duas) Sequências</div>
+                    <div class="filter-option" data-value="3">3 (Três) Sequências</div>
+                </div>
+            </div>
+            <div>
+                <button id="applyFiltersButton" onclick="applyFilters()">Aplicar Filtros</button>
+                <button onclick="resetFilters()">Resetar Filtros</button>
+            </div>
+        </div>
+
+        <div id="tab5" class="tab-content">
+            <h2>Conferir Sorteio</h2>
+            <div>
+                <input type="file" id="fileInput" accept=".txt" class="hidden" onchange="updateFileInfo()">
+                <button onclick="document.getElementById('fileInput').click()">Carregar Jogos</button>
+                <span id="fileInfo">Nenhum arquivo selecionado</span>
+            </div>
+            <div class="check-container">
+                <div class="check-api">
+                    <h3>Conferir via API</h3>
+                    <div>
+                        <label for="drawNumber">Número do Concurso:</label>
+                        <input type="number" id="drawNumber" placeholder="Deixe em branco para o último">
+                        <button id="checkButton" onclick="checkResults()">Conferir</button>
+                    </div>
+                    <div id="checkResults" class="hidden">
+                        <h3>Resultado do Sorteio:</h3>
+                        <div id="drawResultDisplay"></div>
+                    </div>
+                </div>
+                <div class="check-manual">
+                    <h3>Conferir Manualmente</h3>
+                    <div class="manual-input-section">
+                        <div>
+                            <label for="manualDrawNumber">Concurso:</label>
+                            <input type="number" id="manualDrawNumber" placeholder="Ex: 1234">
+                        </div>
+                        <div>
+                            <label for="manualDrawDate">Data (DD/MM/AAAA):</label>
+                            <input type="text" id="manualDrawDate" placeholder="Ex: 18/04/2025">
+                        </div>
+                        <div>
+                            <label for="manualDrawNumbers">Dezenas Sorteadas (6 números):</label>
+                            <input type="text" id="manualDrawNumbers" placeholder="Ex: 04 15 18 41 47 53">
+                        </div>
+                        <button id="checkManualButton" onclick="checkManualResults()">Conferir Manualmente</button>
+                    </div>
+                </div>
+            </div>
+            <div id="resultsSummary" class="hidden">
+                <h3>Estatísticas:</h3>
+                <div id="resultSummary"></div>
+                <div>
+                    <button onclick="exportToPDF()">Exportar para PDF</button>
+                    <button onclick="exportToTxtCheck()">Exportar para TXT</button>
+                </div>
+                <h3>Detalhes dos Jogos:</h3>
+                <div id="detailedResults"></div>
+            </div>
+            <div id="errorContainer" class="hidden"></div>
+        </div>
+
+        <div id="tab6" class="tab-content">
+            <h2>Estatísticas e Análises</h2>
+            
+            <div class="config-section">
+                <h3>Configuração de Análise</h3>
+                
+                <label>Quantidade de sorteios a considerar:</label>
+                <select id="sorteiosAnalise">
+                    <option value="10">Últimos 10</option>
+                    <option value="30">Últimos 30</option>
+                    <option value="50" selected>Últimos 50</option>
+                    <option value="100">Últimos 100</option>
+                </select>
+
+                <label>Número de dezenas quentes/frias:</label>
+                <input type="number" id="topDezenas" min="5" max="30" value="10">
+                
+                <button onclick="atualizarAnalise()" style="margin-top: 10px;">Atualizar Análise</button>
+            </div>
+            
+            <div>
+                <h3>Números Quentes e Frias</h3>
+                <p>Quentes (vermelho): Mais sorteados | Frias (azul): Menos sorteadas</p>
+                <div id="hotColdNumbers" class="number-grid"></div>
+            </div>
+            <div>
+                <h3>Frequência dos Números</h3>
+                <canvas id="frequencyChart"></canvas>
+            </div>
+            <div>
+                <h3>Análise de Padrões</h3>
+                <div id="patternAnalysis"></div>
+            </div>
+        </div>
+        
+        <div id="tab7" class="tab-content">
+            <h2>Análise Estatística dos Filtros</h2>
+            
+            <div class="config-section">
+                <h3>Configuração da Análise</h3>
+                
+                <label>Quantidade de jogos anteriores a considerar (máximo 100):</label>
+                <input type="number" id="qtdJogosAnalise" min="10" max="100" value="50">
+                
+                <label>Selecione os filtros para análise:</label>
+                <div class="filter-options" id="filtrosAnaliseOptions">
+                    <div class="filter-option selected" data-value="parImpar">Par/Ímpar</div>
+                    <div class="filter-option selected" data-value="somaDezenas">Soma das Dezenas</div>
+                    <div class="filter-option selected" data-value="dezenasRepetidas">Dezenas Repetidas</div>
+                    <div class="filter-option selected" data-value="fibonacci">Fibonacci</div>
+                    <div class="filter-option selected" data-value="primos">Números Primos</div>
+                    <div class="filter-option selected" data-value="moldura">Moldura</div>
+                    <div class="filter-option selected" data-value="miolo">Miolo</div>
+                    <div class="filter-option selected" data-value="multiplos3">Múltiplos de 3</div>
+                    <div class="filter-option selected" data-value="quadrantes">Quadrantes</div>
+                    <div class="filter-option selected" data-value="linhas">Linhas Horizontais</div>
+                    <div class="filter-option selected" data-value="sequenciais">Dezenas Sequenciais</div>
+                    <div class="filter-option selected" data-value="dezenas1a30">Dezenas 1-30</div>
+                    <div class="filter-option selected" data-value="dezenas31a60">Dezenas 31-60</div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button onclick="gerarAnaliseFiltros()">Gerar Análise</button>
+                    <button onclick="exportarAnaliseParaPDF()" style="background-color: #d32f2f;">Exportar para PDF</button>
+                </div>
+            </div>
+            
+            <div id="resultadoAnaliseFiltros">
+                <!-- Os resultados serão exibidos aqui -->
+            </div>
+        </div>
+        
+        <div id="tab8" class="tab-content">
+            <h2>Scanner de Concurso</h2>
+            
+            <div class="scanner-section">
+                <h3>Configuração do Scanner</h3>
+                
+                <label for="concursoScanner">Número do Concurso:</label>
+                <input type="number" id="concursoScanner" placeholder="Digite o número do concurso">
+                
+                <button onclick="executarScanner()" style="margin-top: 10px;">Executar Scanner</button>
+                <button id="exportScannerButton" onclick="exportarScannerParaPDF()" style="background-color: #d32f2f; margin-top: 10px; display: none;">Exportar para PDF</button>
+            </div>
+            
+            <div id="scannerResult" class="scanner-result hidden">
+                <h3>Resultado do Scanner</h3>
+                <div id="scannerResultContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constantes para os filtros
+        const FIBONACCI_NUMBERS = [2, 3, 5, 8, 13, 21, 34, 55];
+        const PRIME_NUMBERS = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59];
+        const MOLDURA_NUMBERS = [1,2,3,4,5,6,7,8,9,10,11,21,31,41,51,52,53,54,55,56,57,58,59,60,20,30,40,50];
+        const MIOLO_NUMBERS = [12,13,14,15,16,17,18,19,22,23,24,25,26,27,28,29,32,33,34,35,36,37,38,39,42,43,44,45,46,47,48,49];
+        const QUADRANT_1 = [1,2,3,4,5,11,12,13,14,15,21,22,23,24,25];
+        const QUADRANT_2 = [6,7,8,9,10,16,17,18,19,20,26,27,28,29,30];
+        const QUADRANT_3 = [31,32,33,34,35,41,42,43,44,45,51,52,53,54,55];
+        const QUADRANT_4 = [36,37,38,39,40,46,47,48,49,50,56,57,58,59,60];
+        const HORIZONTAL_LINES = {
+            1: Array.from({length: 10}, (_, i) => i + 1),
+            2: Array.from({length: 10}, (_, i) => i + 11),
+            3: Array.from({length: 10}, (_, i) => i + 21),
+            4: Array.from({length: 10}, (_, i) => i + 31),
+            5: Array.from({length: 10}, (_, i) => i + 41),
+            6: Array.from({length: 10}, (_, i) => i + 51)
+        };
+
+        // Variáveis globais
+        let selectedNumbers = [];
+        let allCombinations = [];
+        let filteredCombinations = [];
+        let historicalData = [];
+        let lastDrawNumbers = [];
+        let currentResults = [];
+        let numberFrequencies = Array(61).fill(0);
+        let lastUsedDraw = null;
+        let frequencyChart = null;
+        let currentScannerResult = null;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            createNumberGrid();
+            setupFilterOptions();
+            initializeFilterStyles();
+            loadLastDraws();
+            
+            document.getElementById('sorteiosAnalise').addEventListener('change', loadLastDraws);
+            document.getElementById('topDezenas').addEventListener('change', function() {
+                displayHotColdNumbers(parseInt(this.value));
+            });
+            
+            document.querySelectorAll('#filtrosAnaliseOptions .filter-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    this.classList.toggle('selected');
+                });
+            });
+        });
+
+        function atualizarAnalise() {
+            loadLastDraws();
+        }
+
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab[onclick="openTab('${tabId}')"]`).classList.add('active');
+        }
+
+        function createNumberGrid() {
+            const quadrants = {
+                quadrant1Grid: QUADRANT_1,
+                quadrant2Grid: QUADRANT_2,
+                quadrant3Grid: QUADRANT_3,
+                quadrant4Grid: QUADRANT_4
+            };
+
+            Object.keys(quadrants).forEach(gridId => {
+                const grid = document.getElementById(gridId);
+                grid.innerHTML = '';
+                const numbers = quadrants[gridId].sort((a, b) => a - b);
+                numbers.forEach((num, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'number-btn';
+                    btn.textContent = num.toString().padStart(2, '0');
+                    btn.dataset.number = num;
+                    btn.style.gridColumn = (index % 5) + 1;
+                    btn.style.gridRow = Math.floor(index / 5) + 1;
+                    btn.addEventListener('click', () => toggleNumberSelection(num));
+                    if (selectedNumbers.includes(num)) {
+                        btn.classList.add('selected');
+                    }
+                    grid.appendChild(btn);
+                });
+            });
+
+            updateSelectedNumbersDisplay();
+        }
+
+        function toggleNumberSelection(number) {
+            const index = selectedNumbers.indexOf(number);
+            if (index === -1) {
+                if (selectedNumbers.length >= 60) {
+                    showError('Máximo de 60 números permitidos!');
+                    return;
+                }
+                selectedNumbers.push(number);
+            } else {
+                selectedNumbers.splice(index, 1);
+            }
+            updateSelectedNumbersDisplay();
+            createNumberGrid();
+        }
+
+        function updateSelectedNumbersDisplay() {
+            document.getElementById('selectedCount').textContent = selectedNumbers.length;
+            const selectedNumbersText = selectedNumbers.sort((a, b) => a - b).map(n => n.toString().padStart(2, '0')).join(', ');
+            document.getElementById('selectedNumbers').textContent = selectedNumbersText;
+            
+            const analysisSection = document.getElementById('selectedNumbersAnalysis');
+            if (selectedNumbers.length >= 6) {
+                analysisSection.style.display = 'block';
+                updateSelectedNumbersAnalysis();
+            } else {
+                analysisSection.style.display = 'none';
+            }
+        }
+
+        function updateSelectedNumbersAnalysis() {
+            if (selectedNumbers.length < 6) return;
+            
+            const sortedNumbers = selectedNumbers.sort((a, b) => a - b);
+            const soma = sortedNumbers.reduce((a, b) => a + b, 0);
+            const pares = sortedNumbers.filter(num => num % 2 === 0).length;
+            const impares = sortedNumbers.length - pares;
+            const fibonacciNumbers = sortedNumbers.filter(num => FIBONACCI_NUMBERS.includes(num));
+            const fibonacciCount = fibonacciNumbers.length;
+            const primosNumbers = sortedNumbers.filter(num => PRIME_NUMBERS.includes(num));
+            const primosCount = primosNumbers.length;
+            const molduraNumbers = sortedNumbers.filter(num => MOLDURA_NUMBERS.includes(num));
+            const molduraCount = molduraNumbers.length;
+            const mioloNumbers = sortedNumbers.filter(num => MIOLO_NUMBERS.includes(num));
+            const mioloCount = mioloNumbers.length;
+            const multiplos3Numbers = sortedNumbers.filter(num => num % 3 === 0);
+            const multiplos3Count = multiplos3Numbers.length;
+            const linhas = new Set();
+            sortedNumbers.forEach(num => {
+                Object.keys(HORIZONTAL_LINES).forEach(linha => {
+                    if (HORIZONTAL_LINES[linha].includes(num)) {
+                        linhas.add(parseInt(linha));
+                    }
+                });
+            });
+            
+            let sequencias = 0;
+            for (let i = 1; i < sortedNumbers.length; i++) {
+                if (sortedNumbers[i] === sortedNumbers[i-1] + 1) {
+                    sequencias++;
+                }
+            }
+            
+            const dezenas1a30 = sortedNumbers.filter(n => n >= 1 && n <= 30).length;
+            const dezenas31a60 = sortedNumbers.filter(n => n >= 31 && n <= 60).length;
+            
+            const quadrantes = new Set();
+            sortedNumbers.forEach(num => {
+                if (QUADRANT_1.includes(num)) quadrantes.add(1);
+                else if (QUADRANT_2.includes(num)) quadrantes.add(2);
+                else if (QUADRANT_3.includes(num)) quadrantes.add(3);
+                else if (QUADRANT_4.includes(num)) quadrantes.add(4);
+            });
+            
+            let analysisHTML = `
+                <p><strong>Soma das dezenas selecionadas:</strong> ${soma}</p>
+                <p><strong>Par/Ímpar:</strong> ${pares} pares e ${impares} ímpares</p>
+                <p><strong>Números Fibonacci:</strong> ${fibonacciCount} ${fibonacciCount > 0 ? '(' + fibonacciNumbers.map(n => n.toString().padStart(2, '0')).join(', ') + ')' : ''}</p>
+                <p><strong>Números Primos:</strong> ${primosCount} ${primosCount > 0 ? '(' + primosNumbers.map(n => n.toString().padStart(2, '0')).join(', ') + ')' : ''}</p>
+                <p><strong>Dezenas na Moldura:</strong> ${molduraCount} ${molduraCount > 0 ? '(' + molduraNumbers.map(n => n.toString().padStart(2, '0')).join(', ') + ')' : ''}</p>
+                <p><strong>Dezenas no Miolo:</strong> ${mioloCount} ${mioloCount > 0 ? '(' + mioloNumbers.map(n => n.toString().padStart(2, '0')).join(', ') + ')' : ''}</p>
+                <p><strong>Múltiplos de 3:</strong> ${multiplos3Count} ${multiplos3Count > 0 ? '(' + multiplos3Numbers.map(n => n.toString().padStart(2, '0')).join(', ') + ')' : ''}</p>
+                <p><strong>Linhas Horizontais:</strong> ${linhas.size} ${linhas.size > 0 ? '(' + Array.from(linhas).sort((a, b) => a - b).join(', ') + ')' : ''}</p>
+                <p><strong>Sequências de números consecutivos:</strong> ${sequencias}</p>
+                <p><strong>Dezenas entre 1-30:</strong> ${dezenas1a30}</p>
+                <p><strong>Dezenas entre 31-60:</strong> ${dezenas31a60}</p>
+                <p><strong>Quadrantes:</strong> ${quadrantes.size} ${quadrantes.size > 0 ? '(' + Array.from(quadrantes).sort((a, b) => a - b).join(', ') + ')' : ''}</p>
+            `;
+            
+            document.getElementById('analysisContent').innerHTML = analysisHTML;
+        }
+
+        function selectAllNumbers() {
+            selectedNumbers = Array.from({length: 60}, (_, i) => i + 1);
+            updateSelectedNumbersDisplay();
+            createNumberGrid();
+            showSuccess('Todas as 60 dezenas selecionadas!');
+        }
+
+        function clearSelection() {
+            selectedNumbers = [];
+            createNumberGrid();
+            updateSelectedNumbersDisplay();
+            showSuccess('Seleção limpa!');
+        }
+
+        function clearCombinations() {
+            allCombinations = [];
+            filteredCombinations = [];
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('filteredCount').textContent = '0';
+            document.getElementById('generationStats').innerHTML = '';
+            showSuccess('Combinações limpas! Você pode gerar novas combinações.');
+        }
+
+        function setupFilterOptions() {
+            document.querySelectorAll('.filter-options').forEach(container => {
+                container.querySelectorAll('.filter-option').forEach(option => {
+                    option.addEventListener('click', function() {
+                        this.classList.toggle('selected');
+                    });
+                });
+            });
+        }
+
+        function initializeFilterStyles() {
+            // Pré-seleção controlada pelo HTML
+        }
+
+        async function loadLastDraws() {
+            const qtdSorteios = parseInt(document.getElementById('sorteiosAnalise').value);
+            const topDezenas = parseInt(document.getElementById('topDezenas').value);
+            
+            try {
+                const response = await fetch('https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/');
+                if (!response.ok) throw new Error('Erro ao carregar dados da API');
+                
+                const data = await response.json();
+                historicalData = [data];
+                lastDrawNumbers = data.listaDezenas.map(Number);
+                
+                const jogosACarregar = Math.min(qtdSorteios - 1, 100);
+                await loadPreviousDraws(data.numero, jogosACarregar);
+                
+                updateNumberFrequencies();
+                displayHotColdNumbers(topDezenas);
+                displayFrequencyChart();
+                displayPatternAnalysis();
+            } catch (error) {
+                console.error('Erro ao carregar sorteios:', error);
+                historicalData = [
+                    { numero: 1234, dataApuracao: "2023-11-30", listaDezenas: ["04", "05", "10", "23", "35", "56"] },
+                    { numero: 1233, dataApuracao: "2023-11-27", listaDezenas: ["07", "12", "15", "31", "42", "58"] },
+                ];
+                lastDrawNumbers = historicalData[0].listaDezenas.map(Number);
+                updateNumberFrequencies();
+                displayHotColdNumbers(topDezenas || 10);
+                displayFrequencyChart();
+                displayPatternAnalysis();
+                showError('Não foi possível carregar os sorteios da Caixa. Usando dados de exemplo.');
+            }
+        }
+
+        async function loadPreviousDraws(currentDraw, count) {
+            try {
+                count = Math.min(count, 100);
+                
+                for (let i = 1; i <= count; i++) {
+                    const drawNumber = currentDraw - i;
+                    if (drawNumber <= 0) break;
+                    
+                    const response = await fetch(`https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/${drawNumber}`);
+                    if (!response.ok) continue;
+                    
+                    const data = await response.json();
+                    historicalData.push(data);
+                    
+                    if (historicalData.length >= count + 1) break;
+                }
+                historicalData.sort((a, b) => b.numero - a.numero);
+            } catch (error) {
+                console.error('Erro ao carregar concursos anteriores:', error);
+            }
+        }
+
+        function updateNumberFrequencies() {
+            numberFrequencies = Array(61).fill(0);
+            historicalData.forEach(draw => {
+                draw.listaDezenas.forEach(num => {
+                    numberFrequencies[parseInt(num)]++;
+                });
+            });
+        }
+
+        function displayHotColdNumbers(topCount = 10) {
+            const frequencies = numberFrequencies.slice(1).map((freq, idx) => ({ 
+                num: idx + 1, 
+                freq 
+            }));
+            
+            frequencies.sort((a, b) => b.freq - a.freq);
+
+            const hot = frequencies.slice(0, topCount).map(f => f.num);
+            const cold = frequencies.slice(-topCount).reverse().map(f => f.num);
+
+            const grid = document.getElementById('hotColdNumbers');
+            grid.innerHTML = '';
+            
+            for (let i = 1; i <= 60; i++) {
+                const btn = document.createElement('span');
+                btn.className = `number-ball ${hot.includes(i) ? 'hot' : ''} ${cold.includes(i) ? 'cold' : ''}`;
+                btn.textContent = i.toString().padStart(2, '0');
+                grid.appendChild(btn);
+            }
+        }
+
+        function displayFrequencyChart() {
+            const ctx = document.getElementById('frequencyChart').getContext('2d');
+            
+            if (frequencyChart) {
+                frequencyChart.destroy();
+            }
+            
+            frequencyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 60}, (_, i) => (i + 1).toString().padStart(2, '0')),
+                    datasets: [{
+                        label: 'Frequência',
+                        data: numberFrequencies.slice(1),
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#2563eb',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Frequência' } },
+                        x: { 
+                            title: { display: true, text: 'Número' },
+                            ticks: {
+                                autoSkip: true,
+                                maxTicksLimit: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function displayPatternAnalysis() {
+            const analysis = [];
+            const sums = historicalData.map(d => d.listaDezenas.reduce((sum, n) => sum + parseInt(n), 0));
+            const avgSum = sums.reduce((a, b) => a + b, 0) / sums.length;
+            const consecutives = historicalData.filter(d => {
+                const nums = d.listaDezenas.map(Number).sort((a, b) => a - b);
+                return nums.some((n, i) => i > 0 && nums[i - 1] == n - 1);
+            }).length;
+            analysis.push(`Soma média das dezenas: ${avgSum.toFixed(1)}`);
+            analysis.push(`Percentual de jogos com números consecutivos: ${(consecutives / historicalData.length * 100).toFixed(1)}%`);
+            document.getElementById('patternAnalysis').innerHTML = analysis.map(line => `<p>${line}</p>`).join('');
+        }
+
+        function combinations(n, k) {
+            if (k > n) return 0;
+            let result = 1;
+            for (let i = 0; i < k; i++) {
+                result *= (n - i) / (i + 1);
+            }
+            return Math.round(result);
+        }
+
+        function generateAllCombinations(numbers, k) {
+            const results = [];
+            function combine(start, combo) {
+                if (combo.length === k) {
+                    results.push([...combo].sort((a, b) => a - b));
+                    return;
+                }
+                for (let i = start; i < numbers.length; i++) {
+                    combine(i + 1, [...combo, numbers[i]]);
+                }
+            }
+            combine(0, []);
+            return results;
+        }
+
+        function applyFiltersToCombination(combo) {
+            const pares = combo.filter(num => num % 2 === 0).length;
+            const parImparKey = `${pares}-${6 - pares}`;
+            const parImparOptions = getSelectedOptions('parImparOptions');
+            if (parImparOptions.length > 0 && !parImparOptions.includes(parImparKey)) {
+                return false;
+            }
+
+            const soma = combo.reduce((a, b) => a + b, 0);
+            let somaMatch = false;
+            const somaOptions = getSelectedOptions('somaOptions');
+            for (const range of somaOptions) {
+                const [min, max] = range.split('-').map(Number);
+                if (soma >= min && soma <= max) {
+                    somaMatch = true;
+                    break;
+                }
+            }
+            if (somaOptions.length > 0 && !somaMatch) {
+                return false;
+            }
+
+            const repetidasOptions = getSelectedOptions('repetidasOptions');
+            if (lastDrawNumbers.length === 6 && repetidasOptions.length > 0) {
+                const repetidas = combo.filter(num => lastDrawNumbers.includes(num)).length;
+                let repetidasMatch = false;
+                for (const filter of repetidasOptions) {
+                    const filterNum = parseInt(filter);
+                    if ((filterNum === 2 && repetidas >= 2) || repetidas === filterNum) {
+                        repetidasMatch = true;
+                        break;
+                    }
+                }
+                if (!repetidasMatch) {
+                    return false;
+                }
+            }
+
+            const fibonacciCount = combo.filter(num => FIBONACCI_NUMBERS.includes(num)).length;
+            const fibonacciOptions = getSelectedOptions('fibonacciOptions');
+            if (fibonacciOptions.length > 0 && !fibonacciOptions.includes(String(fibonacciCount))) {
+                return false;
+            }
+
+            const primosCount = combo.filter(num => PRIME_NUMBERS.includes(num)).length;
+            const primosOptions = getSelectedOptions('primosOptions');
+            if (primosOptions.length > 0 && !primosOptions.includes(String(primosCount))) {
+                return false;
+            }
+
+            const molduraCount = combo.filter(num => MOLDURA_NUMBERS.includes(num)).length;
+            const molduraOptions = getSelectedOptions('molduraOptions');
+            if (molduraOptions.length > 0) {
+                let molduraMatch = false;
+                for (const option of molduraOptions) {
+                    if (option === '3' && molduraCount >= 3) {
+                        molduraMatch = true;
+                        break;
+                    }
+                    if (option === String(molduraCount)) {
+                        molduraMatch = true;
+                        break;
+                    }
+                }
+                if (!molduraMatch) {
+                    return false;
+                }
+            }
+
+            const mioloCount = combo.filter(num => MIOLO_NUMBERS.includes(num)).length;
+            const mioloOptions = getSelectedOptions('mioloOptions');
+            if (mioloOptions.length > 0) {
+                let mioloMatch = false;
+                for (const option of mioloOptions) {
+                    if (option === '3' && mioloCount >= 3) {
+                        mioloMatch = true;
+                        break;
+                    }
+                    if (option === String(mioloCount)) {
+                        mioloMatch = true;
+                        break;
+                    }
+                }
+                if (!mioloMatch) {
+                    return false;
+                }
+            }
+
+            const multiplos3Count = combo.filter(num => num % 3 === 0).length;
+            const multiplos3Options = getSelectedOptions('multiplos3Options');
+            if (multiplos3Options.length > 0 && !multiplos3Options.includes(String(multiplos3Count))) {
+                return false;
+            }
+
+            const quadrantes = new Set();
+            combo.forEach(num => {
+                if (QUADRANT_1.includes(num)) quadrantes.add(1);
+                else if (QUADRANT_2.includes(num)) quadrantes.add(2);
+                else if (QUADRANT_3.includes(num)) quadrantes.add(3);
+                else if (QUADRANT_4.includes(num)) quadrantes.add(4);
+            });
+            const quadrantesOptions = getSelectedOptions('quadrantesOptions');
+            if (quadrantesOptions.length > 0 && !quadrantesOptions.includes(String(quadrantes.size))) {
+                return false;
+            }
+
+            const linhas = new Set();
+            combo.forEach(num => {
+                Object.keys(HORIZONTAL_LINES).forEach(line => {
+                    if (HORIZONTAL_LINES[line].includes(num)) {
+                        linhas.add(parseInt(line));
+                    }
+                });
+            });
+            const linhasOptions = getSelectedOptions('linhasOptions');
+            if (linhasOptions.length > 0 && !linhasOptions.includes(String(linhas.size))) {
+                return false;
+            }
+
+            const sequenciaisOptions = getSelectedOptions('sequenciaisOptions');
+            if (sequenciaisOptions.length > 0) {
+                let sequentialCount = 0;
+                for (let i = 1; i < combo.length; i++) {
+                    if (combo[i] === combo[i - 1] + 1) {
+                        sequentialCount++;
+                    }
+                }
+                let sequentialMatch = false;
+                for (const option of sequenciaisOptions) {
+                    const optNum = parseInt(option);
+                    if ((optNum === 2 && sequentialCount >= 2) || sequentialCount === optNum) {
+                        sequentialMatch = true;
+                        break;
+                    }
+                }
+                if (!sequentialMatch) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // FUNÇÃO PRINCIPAL MODIFICADA PARA DESDOBRAMENTO BALANCEADO
+        async function generateCombinations() {
+            const generateButton = document.getElementById('generateButton');
+            const originalText = generateButton.innerHTML;
+            generateButton.innerHTML = '<span class="loading"></span> Gerando...';
+            generateButton.disabled = true;
+
+            try {
+                if (selectedNumbers.length < 6) {
+                    showError('Selecione pelo menos 6 números!');
+                    return;
+                }
+                
+                const count = parseInt(document.getElementById('combinationsCount').value);
+                if (isNaN(count) || count < 1 || count > 1000) {
+                    showError('Informe um número válido de combinações (1-1000)!');
+                    return;
+                }
+                
+                const maxCombinations = combinations(selectedNumbers.length, 6);
+                if (count > maxCombinations) {
+                    showError(`O número de combinações solicitado (${count}) excede o máximo possível (${maxCombinations}).`);
+                    return;
+                }
+
+                allCombinations = [];
+                filteredCombinations = [];
+
+                const sortedNumbers = [...selectedNumbers].sort((a, b) => a - b);
+                const highNumbers = sortedNumbers.filter(n => n > 30);
+                let generatedCombinations = [];
+
+                // 1. Cálculo de frequências alvo
+                const targetFrequency = Math.ceil((count * 6) / selectedNumbers.length);
+                const minFrequency = Math.floor((count * 6) / selectedNumbers.length);
+                
+                // 2. Objeto para rastrear frequências
+                const frequencies = {};
+                sortedNumbers.forEach(num => frequencies[num] = 0);
+
+                // 3. Função de score aprimorada com peso para números altos
+                const getCombinationScore = (combo) => {
+                    let score = 0;
+                    let highCount = 0;
+                    
+                    combo.forEach(num => {
+                        // Peso maior para números altos (acima de 30)
+                        const weight = num > 30 ? 1.5 : 1;
+                        
+                        if (num > 30) highCount++;
+                        
+                        if (frequencies[num] < minFrequency * 0.8) {
+                            score += (minFrequency - frequencies[num]) * weight * 2;
+                        }
+                        else if (frequencies[num] < targetFrequency) {
+                            score += (targetFrequency - frequencies[num]) * weight;
+                        }
+                        else {
+                            score -= (frequencies[num] - targetFrequency + 1) / weight;
+                        }
+                    });
+                    
+                    // Bônus para combinações com múltiplos números altos
+                    if (highCount >= 3) score += highCount * 2;
+                    if (highCount >= 4) score += highCount * 3;
+                    
+                    return score;
+                };
+
+                // 4. Função para gerar combinação com mínimo de números altos
+                const generateComboWithHighNumbers = (minHigh) => {
+                    const availableHigh = highNumbers.filter(n => frequencies[n] < targetFrequency);
+                    const availableLow = sortedNumbers.filter(n => n <= 30 && frequencies[n] < targetFrequency);
+                    
+                    if (availableHigh.length < minHigh || availableLow.length < (6 - minHigh)) {
+                        return null;
+                    }
+                    
+                    const shuffledHigh = [...availableHigh].sort(() => 0.5 - Math.random());
+                    const shuffledLow = [...availableLow].sort(() => 0.5 - Math.random());
+                    
+                    const combo = [
+                        ...shuffledHigh.slice(0, minHigh),
+                        ...shuffledLow.slice(0, 6 - minHigh)
+                    ].sort((a, b) => a - b);
+                    
+                    return applyFiltersToCombination(combo) ? combo : null;
+                };
+
+                // 5. Estratégia de geração em fases
+                const PHASE_1_PERCENT = 0.3; // 30% combinações com 3+ altos
+                const PHASE_2_PERCENT = 0.5; // 50% combinações com 2+ altos
+                
+                // Fase 1: Combinações com 3+ números altos
+                const phase1Count = Math.min(Math.ceil(count * PHASE_1_PERCENT), Math.ceil(highNumbers.length * 1.5));
+                for (let i = 0; i < phase1Count; i++) {
+                    const combo = generateComboWithHighNumbers(3);
+                    if (combo && !generatedCombinations.some(c => c.join() === combo.join())) {
+                        generatedCombinations.push(combo);
+                        combo.forEach(num => frequencies[num]++);
+                    }
+                }
+                
+                // Fase 2: Combinações com 2+ números altos
+                const phase2Count = Math.min(Math.ceil(count * PHASE_2_PERCENT), count - generatedCombinations.length);
+                for (let i = 0; i < phase2Count; i++) {
+                    const combo = generateComboWithHighNumbers(2) || generateRandomCombo(sortedNumbers);
+                    if (combo && !generatedCombinations.some(c => c.join() === combo.join())) {
+                        generatedCombinations.push(combo);
+                        combo.forEach(num => frequencies[num]++);
+                    }
+                }
+                
+                // Fase 3: Preencher o restante com combinações balanceadas
+                while (generatedCombinations.length < count) {
+                    let bestCombo = null;
+                    let bestScore = -Infinity;
+                    
+                    // Tenta encontrar a melhor combinação em 50 tentativas
+                    for (let i = 0; i < 50; i++) {
+                        const combo = generateRandomCombo(sortedNumbers);
+                        const score = getCombinationScore(combo);
+                        
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestCombo = combo;
+                            if (score >= 15) break;
+                        }
+                    }
+                    
+                    if (bestCombo) {
+                        generatedCombinations.push(bestCombo);
+                        bestCombo.forEach(num => frequencies[num]++);
+                    } else {
+                        const randomCombo = generateRandomCombo(sortedNumbers);
+                        generatedCombinations.push(randomCombo);
+                        randomCombo.forEach(num => frequencies[num]++);
+                    }
+                }
+
+                // 6. Verificação final de balanceamento
+                const minFreq = Math.min(...Object.values(frequencies));
+                const maxFreq = Math.max(...Object.values(frequencies));
+                
+                if ((maxFreq - minFreq) > 3) {
+                    for (let i = 0; i < generatedCombinations.length; i++) {
+                        const currentCombo = generatedCombinations[i];
+                        const currentScore = getCombinationScore(currentCombo);
+                        
+                        for (let j = 0; j < 20; j++) {
+                            const newCombo = generateRandomCombo(sortedNumbers);
+                            const newScore = getCombinationScore(newCombo);
+                            
+                            if (newScore > currentScore + 5) {
+                                currentCombo.forEach(num => frequencies[num]--);
+                                newCombo.forEach(num => frequencies[num]++);
+                                generatedCombinations[i] = newCombo;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                allCombinations = generatedCombinations;
+                filteredCombinations = [...allCombinations];
+                updateResultsDisplay();
+                
+                // Estatísticas detalhadas
+                const frequencyList = Object.entries(frequencies)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([num, freq]) => {
+                        const diff = freq - minFrequency;
+                        const diffText = diff > 0 ? `(+${diff})` : diff < 0 ? `(${diff})` : "";
+                        return `${num.toString().padStart(2, '0')}: ${freq} ${diffText}`;
+                    });
+                
+                document.getElementById('generationStats').innerHTML = `
+                    <p>Geradas ${allCombinations.length} combinações.</p>
+                    <p>Frequência alvo: ${minFrequency}-${targetFrequency}</p>
+                    <p>Diferença máxima: ${Math.max(...Object.values(frequencies)) - Math.min(...Object.values(frequencies))}</p>
+                    <p>Distribuição:</p>
+                    <ul>
+                        ${frequencyList.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                    <p>Combinações com 3+ altos: ${generatedCombinations.filter(c => c.filter(n => n > 30).length >= 3).length}</p>
+                    <p>Combinações com 4+ altos: ${generatedCombinations.filter(c => c.filter(n => n > 30).length >= 4).length}</p>
+                `;
+                
+                showSuccess('Combinações geradas com distribuição balanceada!');
+            } catch (error) {
+                console.error('Erro ao gerar combinações:', error);
+                showError('Erro ao gerar combinações: ' + error.message);
+            } finally {
+                generateButton.innerHTML = originalText;
+                generateButton.disabled = false;
+            }
+        }
+
+        function generateRandomCombo(numbers) {
+            const shuffled = [...numbers].sort(() => 0.5 - Math.random());
+            const combo = shuffled.slice(0, 6).sort((a, b) => a - b);
+            return applyFiltersToCombination(combo) ? combo : generateRandomCombo(numbers);
+        }
+
+        function getSelectedOptions(filterId) {
+            return Array.from(document.querySelector(`#${filterId}`).querySelectorAll('.filter-option.selected')).map(opt => opt.dataset.value);
+        }
+
+        function updateResultsDisplay() {
+            const resultsDiv = document.getElementById('results');
+            document.getElementById('filteredCount').textContent = filteredCombinations.length;
+            resultsDiv.innerHTML = filteredCombinations.map(combo => `
+                <div class="result-item">
+                    ${combo.map(n => `<span class="number-ball">${n.toString().padStart(2, '0')}</span>`).join('')}
+                </div>
+            `).join('');
+        }
+
+        function resetFilters() {
+            document.querySelectorAll('.filter-option').forEach(opt => opt.classList.add('selected'));
+            showSuccess('Filtros resetados! Gere novas combinações para aplicar os filtros.');
+        }
+
+        function applyFilters() {
+            if (allCombinations.length === 0) {
+                showError('Gere combinações antes de aplicar filtros!');
+                return;
+            }
+            
+            filteredCombinations = allCombinations.filter(combo => applyFiltersToCombination(combo));
+            updateResultsDisplay();
+            showSuccess(`Filtros aplicados! ${filteredCombinations.length} combinações restantes.`);
+        }
+
+        function updateFileInfo() {
+            const fileInput = document.getElementById('fileInput');
+            const fileInfo = document.getElementById('fileInfo');
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    console.log('Conteúdo do arquivo:', content); // DEBUG
+                    const combinations = parseCombinations(content);
+                    console.log('Combinações encontradas:', combinations); // DEBUG
+                    
+                    fileInfo.textContent = `${file.name} - ${combinations.length} jogos carregados`;
+                };
+                
+                reader.readAsText(file);
+            } else {
+                fileInfo.textContent = 'Nenhum arquivo selecionado';
+            }
+        }
+
+        function parseCombinations(content) {
+            return content.split('\n')
+                .map(line => {
+                    // Remove qualquer caractere não numérico exceto espaços e separadores
+                    const cleanedLine = line.replace(/[^\d\s,;.-]/g, '');
+                    // Extrai todos os números da linha
+                    const numbers = cleanedLine.split(/[\s,;.-]+/)
+                        .map(n => parseInt(n))
+                        .filter(n => !isNaN(n) && n >= 1 && n <= 60);
+                    
+                    return numbers.length === 6 ? numbers : null;
+                })
+                .filter(comb => comb !== null);
+        }
+
+        async function checkResults() {
+            const drawNumberInput = document.getElementById('drawNumber');
+            const drawNumber = drawNumberInput.value ? parseInt(drawNumberInput.value) : null;
+            const checkResultsDiv = document.getElementById('checkResults');
+            const checkButton = document.getElementById('checkButton');
+            
+            const originalText = checkButton.innerHTML;
+            checkButton.innerHTML = '<span class="loading"></span> Conferindo...';
+            checkButton.disabled = true;
+            
+            try {
+                // Verificar se há jogos carregados
+                const fileInput = document.getElementById('fileInput');
+                let combinationsToCheck = [];
+                
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const content = await file.text();
+                    combinationsToCheck = parseCombinations(content);
+                } else if (filteredCombinations.length > 0) {
+                    combinationsToCheck = [...filteredCombinations];
+                } else {
+                    showError('Nenhum jogo para conferir. Carregue um arquivo ou gere combinações primeiro.');
+                    return;
+                }
+                
+                if (combinationsToCheck.length === 0) {
+                    showError('Nenhum jogo válido encontrado para conferir.');
+                    return;
+                }
+                
+                // Obter os números sorteados
+                let drawData;
+                if (drawNumber) {
+                    const response = await fetch(`https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/${drawNumber}`);
+                    if (!response.ok) throw new Error(`Concurso ${drawNumber} não encontrado.`);
+                    drawData = await response.json();
+                } else {
+                    const response = await fetch('https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/');
+                    if (!response.ok) throw new Error('Erro ao obter o último sorteio.');
+                    drawData = await response.json();
+                }
+                
+                lastUsedDraw = drawData;
+                const drawnNumbers = drawData.listaDezenas.map(Number);
+                
+                // Conferir os jogos
+                currentResults = combinationsToCheck.map(numbers => {
+                    const matches = numbers.filter(num => drawnNumbers.includes(num)).length;
+                    return { numbers, matches };
+                });
+                
+                // Exibir resultados
+                displayCheckResults(drawData);
+                checkResultsDiv.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Erro ao conferir resultados:', error);
+                showError('Erro ao conferir: ' + error.message);
+            } finally {
+                checkButton.innerHTML = originalText;
+                checkButton.disabled = false;
+            }
+        }
+
+        function displayCheckResults(drawData) {
+            const drawResultDisplay = document.getElementById('drawResultDisplay');
+            const resultSummary = document.getElementById('resultSummary');
+            const detailedResults = document.getElementById('detailedResults');
+            const resultsSummary = document.getElementById('resultsSummary');
+            
+            const formattedDate = formatDateToDDMMYYYY(drawData.dataApuracao);
+            
+            // Exibir informações do sorteio
+            drawResultDisplay.innerHTML = `
+                <p><strong>Concurso:</strong> ${drawData.numero}</p>
+                <p><strong>Data:</strong> ${formattedDate}</p>
+                <p><strong>Dezenas sorteadas:</strong> ${drawData.listaDezenas.join(' ')}</p>
+                <div style="margin: 10px 0;">
+                    ${drawData.listaDezenas.map(n => `<span class="number-ball match">${n}</span>`).join('')}
+                </div>
+            `;
+            
+            // Calcular estatísticas
+            const stats = currentResults.reduce((acc, result) => {
+                acc[getResultKey(result.matches)]++;
+                return acc;
+            }, { sena: 0, quina: 0, quadra: 0, terno: 0, duque: 0, as: 0, zero: 0 });
+            
+            // Exibir estatísticas
+            resultSummary.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-count">${stats.sena}</span>
+                        <span class="result-badge sena">Sena</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-count">${stats.quina}</span>
+                        <span class="result-badge quina">Quina</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-count">${stats.quadra}</span>
+                        <span class="result-badge quadra">Quadra</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-count">${stats.terno}</span>
+                        <span class="result-badge terno">Terno</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-count">${stats.duque}</span>
+                        <span class="result-badge duque">Duque</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-count">${stats.as}</span>
+                        <span class="result-badge as">As</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-count">${stats.zero}</span>
+                        <span class="result-badge zero">Zero</span>
+                    </div>
+                </div>
+            `;
+            
+            // Exibir detalhes dos jogos
+            detailedResults.innerHTML = currentResults.map((result, index) => `
+                <div class="result-item">
+                    <span>Jogo ${index + 1}:</span>
+                    ${result.numbers.map(n => `<span class="number-ball ${drawData.listaDezenas.includes(n.toString()) ? 'match' : ''}">${n.toString().padStart(2, '0')}</span>`).join('')}
+                    <span class="result-badge ${getResultClass(result.matches)}">${getResultLabel(result.matches)}</span>
+                </div>
+            `).join('');
+            
+            resultsSummary.classList.remove('hidden');
+        }
+
+        function checkManualResults() {
+            const drawNumber = document.getElementById('manualDrawNumber').value;
+            const drawDate = document.getElementById('manualDrawDate').value;
+            const drawNumbersInput = document.getElementById('manualDrawNumbers').value;
+            
+            if (!drawNumber || !drawDate || !drawNumbersInput) {
+                showError('Preencha todos os campos para conferir manualmente!');
+                return;
+            }
+            
+            const drawNumbers = drawNumbersInput.split(/[\s,;]+/)
+                .map(n => parseInt(n))
+                .filter(n => !isNaN(n) && n >= 1 && n <= 60);
+            
+            if (drawNumbers.length !== 6) {
+                showError('Informe exatamente 6 números válidos (1-60)!');
+                return;
+            }
+            
+            // Verificar se há jogos carregados
+            const fileInput = document.getElementById('fileInput');
+            let combinationsToCheck = [];
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    combinationsToCheck = parseCombinations(content);
+                    processManualCheck(drawNumber, drawDate, drawNumbers, combinationsToCheck);
+                };
+                reader.readAsText(file);
+            } else if (filteredCombinations.length > 0) {
+                combinationsToCheck = [...filteredCombinations];
+                processManualCheck(drawNumber, drawDate, drawNumbers, combinationsToCheck);
+            } else {
+                showError('Nenhum jogo para conferir. Carregue um arquivo ou gere combinações primeiro.');
+                return;
+            }
+        }
+
+        function processManualCheck(drawNumber, drawDate, drawNumbers, combinationsToCheck) {
+            if (combinationsToCheck.length === 0) {
+                showError('Nenhum jogo válido encontrado para conferir.');
+                return;
+            }
+            
+            lastUsedDraw = {
+                numero: drawNumber,
+                dataApuracao: drawDate,
+                listaDezenas: drawNumbers.map(n => n.toString().padStart(2, '0'))
+            };
+            
+            currentResults = combinationsToCheck.map(numbers => {
+                const matches = numbers.filter(num => drawNumbers.includes(num)).length;
+                return { numbers, matches };
+            });
+            
+            // Exibir resultados
+            displayCheckResults(lastUsedDraw);
+            document.getElementById('checkResults').classList.remove('hidden');
+            document.getElementById('resultsSummary').classList.remove('hidden');
+        }
+
+        function getResultKey(matches) {
+            switch(matches) {
+                case 6: return 'sena';
+                case 5: return 'quina';
+                case 4: return 'quadra';
+                case 3: return 'terno';
+                case 2: return 'duque';
+                case 1: return 'as';
+                default: return 'zero';
+            }
+        }
+
+        function getResultLabel(matches) {
+            switch(matches) {
+                case 6: return 'Sena';
+                case 5: return 'Quina';
+                case 4: return 'Quadra';
+                case 3: return 'Terno';
+                case 2: return 'Duque';
+                case 1: return 'As';
+                default: return 'Zero';
+            }
+        }
+
+        function getResultClass(matches) {
+            return getResultKey(matches);
+        }
+
+        function exportToTxt() {
+            if (filteredCombinations.length === 0) {
+                showError('Nenhuma combinação para exportar!');
+                return;
+            }
+            
+            let txtContent = `Mega Sena Combinações\n`;
+            txtContent += `Dezenas Selecionadas: ${selectedNumbers.map(n => n.toString().padStart(2, '0')).join(', ')}\n\n`;
+            
+            filteredCombinations.forEach(combo => {
+                txtContent += `${combo.map(n => n.toString().padStart(2, '0')).join(' ')}\n`;
+            });
+
+            // Formatar a data no padrão DD-MM-YYYY_HH_MM
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            const fileName = `mega_sena_combinacoes_${day}-${month}-${year}_${hours}_${minutes}.txt`;
+
+            const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showSuccess('Combinações exportadas para TXT com sucesso!');
+        }
+
+        function exportToTxtCheck() {
+            if (!currentResults.length || !lastUsedDraw) {
+                showError('Nenhum resultado para exportar!');
+                return;
+            }
+
+            const formattedDate = formatDateToDDMMYYYY(lastUsedDraw.dataApuracao);
+            let txtContent = `CONFERÊNCIA MEGA SENA\n`;
+            txtContent += `Concurso: ${lastUsedDraw.numero}\n`;
+            txtContent += `Data: ${formattedDate}\n`;
+            txtContent += `Dezenas sorteadas: ${lastUsedDraw.listaDezenas.join(' ')}\n`;
+            txtContent += `Dezenas Selecionadas: ${selectedNumbers.map(n => n.toString().padStart(2, '0')).join(', ')}\n\n`;
+            txtContent += `ESTATÍSTICAS:\n`;
+            
+            const stats = currentResults.reduce((acc, result) => {
+                acc[getResultKey(result.matches)]++;
+                return acc;
+            }, { sena: 0, quina: 0, quadra: 0, terno: 0, duque: 0, as: 0, zero: 0 });
+            
+            [6,5,4,3,2,1,0].forEach(matches => {
+                txtContent += `${getResultLabel(matches)}: ${stats[getResultKey(matches)]}\n`;
+            });
+            
+            txtContent += `\nDETALHES DOS JOGOS:\n`;
+            currentResults.forEach((result, index) => {
+                txtContent += `Jogo ${index+1}: ${result.numbers.map(n => n.toString().padStart(2, '0')).join(' ')} | ${result.matches} acertos\n`;
+            });
+
+            const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `conferencia_mega_sena_${lastUsedDraw.numero}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showSuccess('TXT exportado com sucesso!');
+        }
+
+function exportToPDF() {
+    if (!currentResults.length || !lastUsedDraw) {
+        showError('Nenhum resultado para exportar. Realize a conferência primeiro.');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    doc.setProperties({
+        title: `Conferência Mega Sena - Concurso ${lastUsedDraw.numero}`,
+        subject: 'Resultado da conferência de jogos da Mega Sena',
+        author: 'Mega Sena Power Tool Pro',
+        keywords: 'mega sena, conferência, loteria',
+        creator: 'Mega Sena Power Tool Pro'
+    });
+
+    const primaryColor = [0, 102, 204];
+    const formattedDate = formatDateToDDMMYYYY(lastUsedDraw.dataApuracao);
+            
+    // Cabeçalho
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, 210, 20, 'F');
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Conferência de Jogos - Mega Sena', 105, 15, { align: 'center' });
+
+    // Informações básicas
+    doc.setFontSize(12);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Mega Sena Power Tool Pro', 15, 30);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString()}`, 15, 37);
+            
+    // Informações do sorteio
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Informações do Sorteio', 15, 50);
+    doc.setDrawColor(...primaryColor);
+    doc.line(15, 52, 60, 52);
+            
+    doc.setFontSize(12);
+    doc.text(`Concurso: ${lastUsedDraw.numero}`, 15, 60);
+    doc.text(`Data: ${formattedDate}`, 15, 67);
+            
+    doc.text('Dezenas sorteadas:', 15, 74);
+    let xPos = 55;
+    lastUsedDraw.listaDezenas.forEach(num => {
+        doc.setFillColor(16, 185, 129);
+        doc.circle(xPos, 72, 3, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text(num, xPos, 73.5, { align: 'center' });
+        xPos += 7;
+        doc.setTextColor(0, 0, 0);
+    });
+
+// Adicionar as dezenas selecionadas
+doc.setFontSize(12);
+doc.text('Dezenas selecionadas:', 15, 84);
+
+if (selectedNumbers.length > 0) {
+    // Ordena as dezenas
+    const sortedNumbers = [...selectedNumbers].sort((a, b) => a - b);
+    
+    // Divide as dezenas em grupos de 15 para caber na largura da página
+    const chunkSize = 15;
+    let yPosition = 91;
+    
+    for (let i = 0; i < sortedNumbers.length; i += chunkSize) {
+        const chunk = sortedNumbers.slice(i, i + chunkSize);
+        const chunkText = chunk.map(n => n.toString().padStart(2, '0')).join(', ');
+        doc.text(chunkText, 15, yPosition);
+        yPosition += 6; // Espaçamento entre linhas
+    }
+    
+    // Ajusta a posição Y para as próximas seções
+    nextSectionY = yPosition + 4;
+} else {
+    doc.text('Nenhuma dezena selecionada', 15, 91);
+    nextSectionY = 101;
+}
+
+// Estatísticas
+doc.setFontSize(14);
+doc.text('Estatísticas', 15, nextSectionY);
+doc.setDrawColor(...primaryColor);
+doc.line(15, nextSectionY + 2, 45, nextSectionY + 2);
+            
+            const stats = currentResults.reduce((acc, result) => {
+                acc[getResultKey(result.matches)]++;
+                return acc;
+            }, { sena: 0, quina: 0, quadra: 0, terno: 0, duque: 0, as: 0, zero: 0 });
+            
+            const statsData = [
+                ['Resultado', 'Quantidade'],
+                ['Sena', stats.sena],
+                ['Quina', stats.quina],
+                ['Quadra', stats.quadra],
+                ['Terno', stats.terno],
+                ['Duque', stats.duque],
+                ['As', stats.as],
+                ['Zero', stats.zero],
+                ['Total', currentResults.length]
+            ];
+            
+doc.autoTable({
+    startY: nextSectionY + 10,  // Alterado para usar a variável calculada
+    head: [statsData[0]],
+                body: statsData.slice(1),
+                headStyles: {
+                    fillColor: primaryColor,
+                    textColor: 255,
+                    fontStyle: 'bold'
+                },
+                styles: { fontSize: 10 },
+                margin: { left: 15 }
+            });
+            
+            // Detalhes dos jogos (em páginas separadas se necessário)
+            let startY = doc.lastAutoTable.finalY + 10;
+            const gamesPerPage = Math.floor((280 - startY) / 10);
+            const totalPages = Math.ceil(currentResults.length / gamesPerPage);
+            
+            for (let page = 0; page < totalPages; page++) {
+                if (page > 0) {
+                    doc.addPage();
+                    startY = 20;
+                }
+                
+                doc.setFontSize(14);
+                doc.text('Detalhes dos Jogos', 15, startY);
+                doc.setDrawColor(...primaryColor);
+                doc.line(15, startY + 2, 60, startY + 2);
+                startY += 10;
+                
+                const startIdx = page * gamesPerPage;
+                const endIdx = Math.min((page + 1) * gamesPerPage, currentResults.length);
+                const pageResults = currentResults.slice(startIdx, endIdx);
+                
+                const gamesData = pageResults.map((result, idx) => {
+                    const gameNumber = startIdx + idx + 1;
+                    const numbers = result.numbers.map(n => n.toString().padStart(2, '0')).join(' ');
+                    const resultLabel = getResultLabel(result.matches);
+                    return [gameNumber, numbers, resultLabel];
+                });
+                
+                doc.autoTable({
+                    startY: startY,
+                    head: [['Jogo', 'Números', 'Resultado']],
+                    body: gamesData,
+                    headStyles: {
+                        fillColor: primaryColor,
+                        textColor: 255,
+                        fontStyle: 'bold'
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 15 },
+                        1: { cellWidth: 80 },
+                        2: { cellWidth: 30 }
+                    },
+                    styles: { fontSize: 8 },
+                    margin: { left: 15 }
+                });
+            }
+            
+            // Rodapé
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Mega Sena Power Tool Pro - Relatório não oficial', 105, 290, { align: 'center' });
+            
+            doc.save(`conferencia_mega_sena_${lastUsedDraw.numero}.pdf`);
+            showSuccess('PDF exportado com sucesso!');
+        }
+
+        function exportarAnaliseParaPDF() {
+            const resultadosDiv = document.getElementById('resultadoAnaliseFiltros');
+            if (!resultadosDiv || resultadosDiv.innerHTML.trim() === '') {
+                showError('Gere a análise primeiro antes de exportar.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setProperties({
+                title: 'Análise Estatística de Filtros - Mega Sena',
+                subject: 'Resultado da análise estatística dos filtros da Mega Sena',
+                author: 'Mega Sena Power Tool Pro',
+                keywords: 'mega sena, análise, filtros, estatística',
+                creator: 'Mega Sena Power Tool Pro'
+            });
+
+            const primaryColor = [0, 102, 204];
+            
+            // Cabeçalho
+            doc.setFillColor(...primaryColor);
+            doc.rect(0, 0, 210, 20, 'F');
+            doc.setFontSize(16);
+            doc.setTextColor(255, 255, 255);
+            doc.text('Análise Estatística de Filtros - Mega Sena', 105, 15, { align: 'center' });
+
+            // Informações básicas
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Mega Sena Power Tool Pro', 15, 30);
+            doc.text(`Gerado em: ${new Date().toLocaleDateString()}`, 15, 37);
+            
+            // Configuração da análise
+            const qtdJogos = document.getElementById('qtdJogosAnalise').value;
+            const filtrosSelecionados = Array.from(document.querySelectorAll('#filtrosAnaliseOptions .filter-option.selected'))
+                .map(opt => opt.textContent).join(', ');
+            
+            doc.setFontSize(14);
+            doc.setTextColor(0, 0, 0);
+            doc.text('Configuração da Análise', 15, 50);
+            doc.setDrawColor(...primaryColor);
+            doc.line(15, 52, 75, 52);
+            
+            doc.setFontSize(12);
+            doc.text(`Quantidade de jogos analisados: ${qtdJogos}`, 15, 60);
+            doc.text(`Filtros selecionados: ${filtrosSelecionados}`, 15, 67);
+            
+            // Extrair conteúdo HTML e converter para PDF
+            const elements = resultadosDiv.querySelectorAll('.filter-section');
+            let startY = 80;
+            
+            elements.forEach((element, index) => {
+                if (index > 0 && startY > 250) {
+                    doc.addPage();
+                    startY = 20;
+                }
+                
+                const title = element.querySelector('h4').textContent;
+                const tables = element.querySelectorAll('table');
+                
+                doc.setFontSize(14);
+                doc.setTextColor(...primaryColor);
+                doc.text(title, 15, startY);
+                startY += 10;
+                
+                tables.forEach(table => {
+                    const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent);
+                    const rows = Array.from(table.querySelectorAll('tr')).slice(1); // Pular cabeçalho
+                    const data = rows.map(row => 
+                        Array.from(row.querySelectorAll('td')).map(td => td.textContent)
+                    );
+                    
+                    doc.autoTable({
+                        startY: startY,
+                        head: [headers],
+                        body: data,
+                        headStyles: {
+                            fillColor: primaryColor,
+                            textColor: 255,
+                            fontStyle: 'bold'
+                        },
+                        styles: { fontSize: 8 },
+                        margin: { left: 15 }
+                    });
+                    
+                    startY = doc.lastAutoTable.finalY + 10;
+                });
+            });
+            
+            // Rodapé
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Mega Sena Power Tool Pro - Relatório não oficial', 105, 290, { align: 'center' });
+            
+            doc.save('analise_filtros_mega_sena.pdf');
+            showSuccess('PDF de análise exportado com sucesso!');
+        }
+
+        function exportarScannerParaPDF() {
+            if (!currentScannerResult) {
+                showError('Nenhum resultado de scanner para exportar. Execute o scanner primeiro.');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setProperties({
+                title: `Scanner Mega Sena - Concurso ${currentScannerResult.draw.numero}`,
+                subject: 'Resultado da análise detalhada do concurso da Mega Sena',
+                author: 'Mega Sena Power Tool Pro',
+                keywords: 'mega sena, scanner, análise, loteria',
+                creator: 'Mega Sena Power Tool Pro'
+            });
+
+            const primaryColor = [0, 102, 204];
+            const dataFormatada = formatDateToDDMMYYYY(currentScannerResult.draw.dataApuracao);
+            
+            doc.setFillColor(...primaryColor);
+            doc.rect(0, 0, 210, 20, 'F');
+            doc.setFontSize(16);
+            doc.setTextColor(255, 255, 255);
+            doc.text('Scanner de Concurso - Mega Sena', 105, 15, { align: 'center' });
+
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Mega Sena Power Tool Pro', 15, 30);
+            doc.text(`Gerado em: ${new Date().toLocaleDateString()}`, 15, 37);
+            
+            doc.setFontSize(14);
+            doc.setTextColor(0, 0, 0);
+            doc.text('Informações do Sorteio', 15, 50);
+            doc.setDrawColor(...primaryColor);
+            doc.line(15, 52, 60, 52);
+            
+            doc.setFontSize(12);
+            doc.text(`Concurso: ${currentScannerResult.draw.numero}`, 15, 60);
+            doc.text(`Data: ${dataFormatada}`, 15, 67);
+            
+            doc.text('Dezenas sorteadas:', 15, 74);
+            const numeros = currentScannerResult.draw.listaDezenas.map(Number).sort((a, b) => a - b);
+            let xPos = 55;
+            numeros.forEach(num => {
+                doc.setFillColor(16, 185, 129);
+                doc.circle(xPos, 72, 3, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.text(num.toString().padStart(2, '0'), xPos, 73.5, { align: 'center' });
+                xPos += 7;
+                doc.setTextColor(0, 0, 0);
+            });
+            
+            doc.setFontSize(14);
+            doc.text('Análise Detalhada', 15, 90);
+            doc.setDrawColor(...primaryColor);
+            doc.line(15, 92, 60, 92);
+            
+            const analysis = currentScannerResult.analysis;
+            const analysisData = [
+                ['Parâmetro', 'Valor'],
+                ['Soma das dezenas', analysis.soma],
+                ['Pares/Ímpares', `${analysis.pares} / ${analysis.impares}`],
+                ['Números Fibonacci', analysis.fibonacci],
+                ['Números Primos', analysis.primos],
+                ['Dezenas na Moldura', analysis.moldura],
+                ['Dezenas no Miolo', analysis.miolo],
+                ['Múltiplos de 3', analysis.multiplos3],
+                ['Quadrantes', analysis.quadrantes],
+                ['Linhas Horizontais', analysis.linhas],
+                ['Sequências', analysis.sequencias],
+                ['Dezenas 1-30', analysis.dezenas1a30],
+                ['Dezenas 31-60', analysis.dezenas31a60]
+            ];
+            
+            doc.autoTable({
+                startY: 100,
+                head: [analysisData[0]],
+                body: analysisData.slice(1),
+                headStyles: {
+                    fillColor: primaryColor,
+                    textColor: 255,
+                    fontStyle: 'bold'
+                },
+                columnStyles: {
+                    0: { cellWidth: 60, fontStyle: 'bold' },
+                    1: { cellWidth: 40 }
+                },
+                styles: { fontSize: 10 },
+                margin: { left: 15 }
+            });
+            
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Mega Sena Power Tool Pro - Relatório não oficial', 105, 290, { align: 'center' });
+            
+            doc.save(`scanner_mega_sena_${currentScannerResult.draw.numero}.pdf`);
+            showSuccess('PDF exportado com sucesso!');
+        }
+
+        // Funções para a aba de Filtro Estatístico
+        function gerarAnaliseFiltros() {
+            const qtdJogos = parseInt(document.getElementById('qtdJogosAnalise').value);
+            const filtrosSelecionados = Array.from(document.querySelectorAll('#filtrosAnaliseOptions .filter-option.selected'))
+                .map(opt => opt.dataset.value);
+            
+            if (filtrosSelecionados.length === 0) {
+                showError('Selecione pelo menos um filtro para análise.');
+                return;
+            }
+            
+            if (qtdJogos < 10 || qtdJogos > 100) {
+                showError('A quantidade de jogos deve ser entre 10 e 100.');
+                return;
+            }
+            
+            if (historicalData.length < qtdJogos) {
+                showError(`Você solicitou análise de ${qtdJogos} jogos, mas só temos ${historicalData.length} disponíveis.`);
+                return;
+            }
+            
+            const jogosAnalisados = historicalData.slice(0, qtdJogos);
+            let resultadosHTML = `<h3>Resultados da Análise (${qtdJogos} jogos)</h3>`;
+            
+            filtrosSelecionados.forEach(filtro => {
+                resultadosHTML += `<div class="filter-section"><h4>${getNomeFiltro(filtro)}</h4>`;
+                
+                switch(filtro) {
+                    case 'parImpar':
+                        resultadosHTML += analisarParImpar(jogosAnalisados);
+                        break;
+                    case 'somaDezenas':
+                        resultadosHTML += analisarSomaDezenas(jogosAnalisados);
+                        break;
+                    case 'dezenasRepetidas':
+                        resultadosHTML += analisarDezenasRepetidas(jogosAnalisados);
+                        break;
+                    case 'fibonacci':
+                        resultadosHTML += analisarFibonacci(jogosAnalisados);
+                        break;
+                    case 'primos':
+                        resultadosHTML += analisarPrimos(jogosAnalisados);
+                        break;
+                    case 'moldura':
+                        resultadosHTML += analisarMoldura(jogosAnalisados);
+                        break;
+                    case 'miolo':
+                        resultadosHTML += analisarMiolo(jogosAnalisados);
+                        break;
+                    case 'multiplos3':
+                        resultadosHTML += analisarMultiplos3(jogosAnalisados);
+                        break;
+                    case 'quadrantes':
+                        resultadosHTML += analisarQuadrantes(jogosAnalisados);
+                        break;
+                    case 'linhas':
+                        resultadosHTML += analisarLinhas(jogosAnalisados);
+                        break;
+                    case 'sequenciais':
+                        resultadosHTML += analisarSequenciais(jogosAnalisados);
+                        break;
+                    case 'dezenas1a30':
+                        resultadosHTML += analisarDezenas1a30(jogosAnalisados);
+                        break;
+                    case 'dezenas31a60':
+                        resultadosHTML += analisarDezenas31a60(jogosAnalisados);
+                        break;
+                }
+                
+                resultadosHTML += `</div>`;
+            });
+            
+            document.getElementById('resultadoAnaliseFiltros').innerHTML = resultadosHTML;
+        }
+
+        function analisarParImpar(jogos) {
+            const stats = {
+                '3-3': 0, '2-4': 0, '4-2': 0, '1-5': 0, '5-1': 0, '0-6': 0, '6-0': 0
+            };
+            
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number);
+                const pares = numeros.filter(n => n % 2 === 0).length;
+                const impares = 6 - pares;
+                const key = `${pares}-${impares}`;
+                stats[key]++;
+            });
+            
+            const total = jogos.length;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const percent = ((count / total) * 100).toFixed(1);
+                return [key.replace('-', 'P-').replace('P-', 'P-') + 'I', count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Distribuição</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function analisarSomaDezenas(jogos) {
+            const sums = jogos.map(jogo => 
+                jogo.listaDezenas.reduce((sum, num) => sum + parseInt(num), 0)
+            );
+            
+            const minSum = Math.min(...sums);
+            const maxSum = Math.max(...sums);
+            const avgSum = (sums.reduce((a, b) => a + b, 0) / sums.length).toFixed(1);
+            
+            // Definir faixas de soma
+            const ranges = [
+                { min: 0, max: 100, label: '0-100' },
+                { min: 101, max: 140, label: '101-140' },
+                { min: 141, max: 180, label: '141-180' },
+                { min: 181, max: 220, label: '181-220' },
+                { min: 221, max: 260, label: '221-260' },
+                { min: 261, max: 300, label: '261-300' }
+            ];
+            
+            const rangeCounts = ranges.map(range => {
+                const count = sums.filter(s => s >= range.min && s <= range.max).length;
+                const percent = ((count / sums.length) * 100).toFixed(1);
+                return { ...range, count, percent };
+            });
+            
+            return `
+                <p>Soma mínima: ${minSum} | Soma máxima: ${maxSum} | Média: ${avgSum}</p>
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Faixa de Soma</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rangeCounts.map(range => `
+                            <tr>
+                                <td>${range.label}</td>
+                                <td>${range.count}</td>
+                                <td>${range.percent}%</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function analisarDezenasRepetidas(jogos) {
+            if (jogos.length < 2) {
+                return '<p>Análise de dezenas repetidas requer pelo menos 2 jogos.</p>';
+            }
+            
+            const stats = {
+                0: 0, // Nenhuma repetida
+                1: 0, // 1 repetida
+                2: 0  // 2+ repetidas
+            };
+            
+            for (let i = 1; i < jogos.length; i++) {
+                const current = jogos[i].listaDezenas.map(Number);
+                const previous = jogos[i-1].listaDezenas.map(Number);
+                const repeated = current.filter(num => previous.includes(num)).length;
+                
+                if (repeated === 0) stats[0]++;
+                else if (repeated === 1) stats[1]++;
+                else stats[2]++;
+            }
+            
+            const total = jogos.length - 1;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const label = key === '2' ? '2+' : key;
+                const percent = ((count / total) * 100).toFixed(1);
+                return [`${label} repetida(s)`, count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Dezenas Repetidas</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function analisarFibonacci(jogos) {
+            const stats = { 0: 0, 1: 0, 2: 0, 3: 0 };
+            
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number);
+                const fibCount = numeros.filter(n => FIBONACCI_NUMBERS.includes(n)).length;
+                stats[fibCount]++;
+            });
+            
+            const total = jogos.length;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const percent = ((count / total) * 100).toFixed(1);
+                return [`${key} Fibonacci`, count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Números Fibonacci</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <p>Números Fibonacci: ${FIBONACCI_NUMBERS.join(', ')}</p>
+            `;
+        }
+
+        function analisarPrimos(jogos) {
+            const stats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+            
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number);
+                const primosCount = numeros.filter(n => PRIME_NUMBERS.includes(n)).length;
+                stats[primosCount]++;
+            });
+            
+            const total = jogos.length;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const percent = ((count / total) * 100).toFixed(1);
+                return [`${key} primo(s)`, count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Números Primos</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <p>Números Primos: ${PRIME_NUMBERS.join(', ')}</p>
+            `;
+        }
+
+        function analisarMoldura(jogos) {
+            const stats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+            
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number);
+                const molduraCount = numeros.filter(n => MOLDURA_NUMBERS.includes(n)).length;
+                stats[molduraCount]++;
+            });
+            
+            const total = jogos.length;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const percent = ((count / total) * 100).toFixed(1);
+                const label = key === '3' ? '3+' : key;
+                return [`${label} moldura`, count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Dezenas na Moldura</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function analisarMiolo(jogos) {
+            const stats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+            
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number);
+                const mioloCount = numeros.filter(n => MIOLO_NUMBERS.includes(n)).length;
+                stats[mioloCount]++;
+            });
+            
+            const total = jogos.length;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const percent = ((count / total) * 100).toFixed(1);
+                const label = key === '3' ? '3+' : key;
+                return [`${label} miolo`, count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Dezenas no Miolo</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function analisarMultiplos3(jogos) {
+            const stats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+            
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number);
+                const multiplosCount = numeros.filter(n => n % 3 === 0).length;
+                stats[multiplosCount]++;
+            });
+            
+            const total = jogos.length;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const percent = ((count / total) * 100).toFixed(1);
+                return [`${key} múltiplo(s) de 3`, count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Múltiplos de 3</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function analisarQuadrantes(jogos) {
+            const stats = { 1: 0, 2: 0, 3: 0, 4: 0 };
+            
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number);
+                const quadrantes = new Set();
+                
+                numeros.forEach(num => {
+                    if (QUADRANT_1.includes(num)) quadrantes.add(1);
+                    else if (QUADRANT_2.includes(num)) quadrantes.add(2);
+                    else if (QUADRANT_3.includes(num)) quadrantes.add(3);
+                    else if (QUADRANT_4.includes(num)) quadrantes.add(4);
+                });
+                
+                stats[quadrantes.size]++;
+            });
+            
+            const total = jogos.length;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const percent = ((count / total) * 100).toFixed(1);
+                return [`${key} quadrante(s)`, count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Quadrantes</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function analisarLinhas(jogos) {
+            const stats = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+            
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number);
+                const linhas = new Set();
+                
+                numeros.forEach(num => {
+                    Object.keys(HORIZONTAL_LINES).forEach(linha => {
+                        if (HORIZONTAL_LINES[linha].includes(num)) {
+                            linhas.add(parseInt(linha));
+                        }
+                    });
+                });
+                
+                stats[linhas.size]++;
+            });
+            
+            const total = jogos.length;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const percent = ((count / total) * 100).toFixed(1);
+                return [`${key} linha(s)`, count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Linhas Horizontais</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function analisarSequenciais(jogos) {
+            const stats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+            
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number).sort((a, b) => a - b);
+                let sequencias = 0;
+                
+                for (let i = 1; i < numeros.length; i++) {
+                    if (numeros[i] === numeros[i-1] + 1) {
+                        sequencias++;
+                    }
+                }
+                
+                stats[sequencias]++;
+            });
+            
+            const total = jogos.length;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const percent = ((count / total) * 100).toFixed(1);
+                return [`${key} sequência(s)`, count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Sequências</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function analisarDezenas1a30(jogos) {
+            const stats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+            
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number);
+                const count = numeros.filter(n => n >= 1 && n <= 30).length;
+                stats[count]++;
+            });
+            
+            const total = jogos.length;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const percent = ((count / total) * 100).toFixed(1);
+                return [`${key} dezena(s) 1-30`, count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Dezenas 1-30</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function analisarDezenas31a60(jogos) {
+            const stats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+            
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number);
+                const count = numeros.filter(n => n >= 31 && n <= 60).length;
+                stats[count]++;
+            });
+            
+            const total = jogos.length;
+            const rows = Object.entries(stats).map(([key, count]) => {
+                const percent = ((count / total) * 100).toFixed(1);
+                return [`${key} dezena(s) 31-60`, count, `${percent}%`];
+            });
+            
+            return `
+                <table class="resultado-analise">
+                    <thead>
+                        <tr>
+                            <th>Dezenas 31-60</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>
+                                <td>${row[0]}</td>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Funções para a aba Scanner
+        async function executarScanner() {
+            const concursoInput = document.getElementById('concursoScanner');
+            const concurso = parseInt(concursoInput.value);
+            
+            if (isNaN(concurso) || concurso <= 0) {
+                showError('Informe um número de concurso válido.');
+                return;
+            }
+            
+            try {
+                let draw = historicalData.find(d => d.numero === concurso);
+                
+                if (!draw) {
+                    const response = await fetch(`https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/${concurso}`);
+                    if (!response.ok) throw new Error(`Concurso ${concurso} não encontrado.`);
+                    draw = await response.json();
+                    historicalData.push(draw);
+                    historicalData.sort((a, b) => b.numero - a.numero);
+                }
+                
+                analisarJogo(draw);
+                document.getElementById('exportScannerButton').style.display = 'inline-block';
+                
+            } catch (error) {
+                console.error('Erro ao executar scanner:', error);
+                showError(`Erro: ${error.message}`);
+            }
+        }
+        
+        function analisarJogo(draw) {
+            const numeros = draw.listaDezenas.map(Number).sort((a, b) => a - b);
+            const soma = numeros.reduce((a, b) => a + b, 0);
+            const pares = numeros.filter(num => num % 2 === 0).length;
+            const impares = 6 - pares;
+            const fibonacci = numeros.filter(num => FIBONACCI_NUMBERS.includes(num)).length;
+            const primos = numeros.filter(num => PRIME_NUMBERS.includes(num)).length;
+            const moldura = numeros.filter(num => MOLDURA_NUMBERS.includes(num)).length;
+            const miolo = numeros.filter(num => MIOLO_NUMBERS.includes(num)).length;
+            const multiplos3 = numeros.filter(num => num % 3 === 0).length;
+            
+            const quadrantes = new Set();
+            numeros.forEach(num => {
+                if (QUADRANT_1.includes(num)) quadrantes.add(1);
+                else if (QUADRANT_2.includes(num)) quadrantes.add(2);
+                else if (QUADRANT_3.includes(num)) quadrantes.add(3);
+                else if (QUADRANT_4.includes(num)) quadrantes.add(4);
+            });
+            
+            const linhas = new Set();
+            numeros.forEach(num => {
+                Object.keys(HORIZONTAL_LINES).forEach(linha => {
+                    if (HORIZONTAL_LINES[linha].includes(num)) {
+                        linhas.add(parseInt(linha));
+                    }
+                });
+            });
+            
+            let sequencias = 0;
+            for (let i = 1; i < numeros.length; i++) {
+                if (numeros[i] === numeros[i-1] + 1) {
+                    sequencias++;
+                }
+            }
+            
+            const dezenas1a30 = numeros.filter(n => n >= 1 && n <= 30).length;
+            const dezenas31a60 = numeros.filter(n => n >= 31 && n <= 60).length;
+            const dataFormatada = formatDateToDDMMYYYY(draw.dataApuracao);
+            
+            let resultadoHTML = `
+                <div class="scanner-result-item">
+                    <h4>Informações Básicas</h4>
+                    <p><strong>Concurso:</strong> ${draw.numero}</p>
+                    <p><strong>Data:</strong> ${dataFormatada}</p>
+                    <p><strong>Dezenas sorteadas:</strong> ${numeros.map(n => n.toString().padStart(2, '0')).join(' ')}</p>
+                    <div style="margin: 10px 0;">
+                        ${numeros.map(n => `<span class="number-ball">${n.toString().padStart(2, '0')}</span>`).join('')}
+                    </div>
+                </div>
+                
+                <div class="scanner-result-item">
+                    <h4>Análise Detalhada</h4>
+                    <p><strong>Soma das dezenas:</strong> ${soma}</p>
+                    <p><strong>Distribuição Par/Ímpar:</strong> ${pares} pares e ${impares} ímpares</p>
+                    <p><strong>Números Fibonacci:</strong> ${fibonacci} (${numeros.filter(n => FIBONACCI_NUMBERS.includes(n)).map(n => n.toString().padStart(2, '0')).join(', ') || 'Nenhum'})</p>
+                    <p><strong>Números Primos:</strong> ${primos} (${numeros.filter(n => PRIME_NUMBERS.includes(n)).map(n => n.toString().padStart(2, '0')).join(', ') || 'Nenhum'})</p>
+                    <p><strong>Dezenas na Moldura:</strong> ${moldura} (${numeros.filter(n => MOLDURA_NUMBERS.includes(n)).map(n => n.toString().padStart(2, '0')).join(', ') || 'Nenhuma'})</p>
+                    <p><strong>Dezenas no Miolo:</strong> ${miolo} (${numeros.filter(n => MIOLO_NUMBERS.includes(n)).map(n => n.toString().padStart(2, '0')).join(', ') || 'Nenhuma'})</p>
+                    <p><strong>Múltiplos de 3:</strong> ${multiplos3} (${numeros.filter(n => n % 3 === 0).map(n => n.toString().padStart(2, '0')).join(', ') || 'Nenhum'})</p>
+                    <p><strong>Quadrantes:</strong> ${quadrantes.size} (${Array.from(quadrantes).join(', ')})</p>
+                    <p><strong>Linhas Horizontais:</strong> ${linhas.size} (${Array.from(linhas).join(', ')})</p>
+                    <p><strong>Sequências de números consecutivos:</strong> ${sequencias}</p>
+                    <p><strong>Dezenas entre 1-30:</strong> ${dezenas1a30}</p>
+                    <p><strong>Dezenas entre 31-60:</strong> ${dezenas31a60}</p>
+                </div>
+            `;
+            
+            currentScannerResult = {
+                draw,
+                analysis: {
+                    soma,
+                    pares,
+                    impares,
+                    fibonacci,
+                    primos,
+                    moldura,
+                    miolo,
+                    multiplos3,
+                    quadrantes: quadrantes.size,
+                    linhas: linhas.size,
+                    sequencias,
+                    dezenas1a30,
+                    dezenas31a60
+                }
+            };
+            
+            document.getElementById('scannerResultContent').innerHTML = resultadoHTML;
+            document.getElementById('scannerResult').classList.remove('hidden');
+        }
+        
+        function getNomeFiltro(codigoFiltro) {
+            const nomes = {
+                'parImpar': 'Filtro 1: Par/Ímpar',
+                'somaDezenas': 'Filtro 2: Soma das Dezenas',
+                'dezenasRepetidas': 'Filtro 3: Dezenas Repetidas',
+                'fibonacci': 'Filtro 4: Fibonacci',
+                'primos': 'Filtro 5: Números Primos',
+                'moldura': 'Filtro 6: Moldura',
+                'miolo': 'Filtro 7: Miolo',
+                'multiplos3': 'Filtro 8: Múltiplos de 3',
+                'quadrantes': 'Filtro 9: Quadrantes',
+                'linhas': 'Filtro 10: Linhas Horizontais',
+                'sequenciais': 'Filtro 11: Dezenas Sequenciais',
+                'dezenas1a30': 'Filtro 12: Dezenas 1-30',
+                'dezenas31a60': 'Filtro 13: Dezenas 31-60'
+            };
+            return nomes[codigoFiltro] || codigoFiltro;
+        }
+
+        function formatDateToDDMMYYYY(dateString) {
+            if (!dateString) return 'Data não disponível';
+            const parts = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/) || dateString.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (parts) {
+                const [, year, month, day] = parts[0].includes('-') ? parts : [null, parts[3], parts[2], parts[1]];
+                return `${day}/${month}/${year}`;
+            }
+            return 'Data não disponível';
+        }
+
+        function showError(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `<div class="error-message">${message}</div>`;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => errorContainer.classList.add('hidden'), 5000);
+        }
+
+        function showSuccess(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `<div class="success-message">${message}</div>`;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => errorContainer.classList.add('hidden'), 3000);
+        }
+    </script>
+</body>
+</html>
