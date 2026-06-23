@@ -493,6 +493,8 @@
             <div>
                 <label for="combinationsCount">Número de combinações:</label>
                 <input type="number" id="combinationsCount" min="1" max="1000" value="100">
+                <label for="numbersPerGame">Dezenas por jogo:</label>
+                <input type="number" id="numbersPerGame" min="6" max="15" value="6">
             </div>
             <div>
                 <button id="generateButton" onclick="generateCombinations()">Gerar Combinações</button>
@@ -1190,8 +1192,11 @@ async function loadPreviousDraws(currentDraw, count) {
         }
 
         function applyFiltersToCombination(combo) {
+            if (combo.length !== 6) {
+                return true;
+            }
             const pares = combo.filter(num => num % 2 === 0).length;
-            const parImparKey = `${pares}-${6 - pares}`;
+            const parImparKey = `${pares}-${combo.length - pares}`;
             const parImparOptions = getSelectedOptions('parImparOptions');
             if (parImparOptions.length > 0 && !parImparOptions.includes(parImparKey)) {
                 return false;
@@ -1387,7 +1392,16 @@ async function loadPreviousDraws(currentDraw, count) {
                     showError('Informe um número válido de combinações (1-1000)!');
                     return;
                 }
-                const maxCombinations = combinations(selectedNumbers.length, 6);
+                const numbersPerGame = parseInt(document.getElementById('numbersPerGame').value);
+                if (isNaN(numbersPerGame) || numbersPerGame < 6 || numbersPerGame > 15) {
+                    showError('Informe uma quantidade válida de dezenas por jogo (6-15)!');
+                    return;
+                }
+                if (selectedNumbers.length < numbersPerGame) {
+                    showError(`Selecione pelo menos ${numbersPerGame} números!`);
+                    return;
+                }
+                const maxCombinations = combinations(selectedNumbers.length, numbersPerGame);
                 if (count > maxCombinations) {
                     showError(`O número de combinações solicitado (${count}) excede o máximo possível (${maxCombinations}).`);
                     return;
@@ -1400,9 +1414,9 @@ async function loadPreviousDraws(currentDraw, count) {
                 let generatedCombinations;
 
                 if (selectedNumbers.length > 20) {
-                    generatedCombinations = generateRandomCombinations(sortedNumbers, 6, count);
+                    generatedCombinations = generateRandomCombinations(sortedNumbers, numbersPerGame, count);
                 } else {
-                    generatedCombinations = generateAllCombinations(sortedNumbers, 6);
+                    generatedCombinations = generateAllCombinations(sortedNumbers, numbersPerGame);
                     generatedCombinations = generatedCombinations.slice(0, count);
                 }
 
@@ -1417,7 +1431,7 @@ async function loadPreviousDraws(currentDraw, count) {
 
                 if (missingNumbers.length > 0) {
                     for (const missingNum of missingNumbers) {
-                        const comboWithMissing = generateCombinationWithNumber(missingNum, sortedNumbers);
+                        const comboWithMissing = generateCombinationWithNumber(missingNum, sortedNumbers, numbersPerGame);
                         if (comboWithMissing && generatedCombinations.length < count) {
                             generatedCombinations.push(comboWithMissing);
                         }
@@ -1426,7 +1440,7 @@ async function loadPreviousDraws(currentDraw, count) {
 
                 
             const totalNumbers = sortedNumbers.length;
-            const totalSlots = count * 6;
+            const totalSlots = count * numbersPerGame;
             const baseFrequency = Math.floor(totalSlots / totalNumbers);
             const extraFrequency = totalSlots % totalNumbers;
             const frequencies = {};
@@ -1446,13 +1460,13 @@ async function loadPreviousDraws(currentDraw, count) {
 
                 const combo = [];
                 const availableCopy = [...available];
-                while (combo.length < 6 && availableCopy.length > 0) {
+                while (combo.length < numbersPerGame && availableCopy.length > 0) {
                     const randIndex = Math.floor(Math.random() * availableCopy.length);
                     const chosen = availableCopy.splice(randIndex, 1)[0];
                     if (!combo.includes(chosen)) combo.push(chosen);
                 }
 
-                if (combo.length === 6) {
+                if (combo.length === numbersPerGame) {
                     const sortedCombo = combo.sort((a, b) => a - b);
                     const key = sortedCombo.join(',');
                     if (!usedCombinations.has(key) && applyFiltersToCombination(sortedCombo)) {
@@ -1486,10 +1500,10 @@ async function loadPreviousDraws(currentDraw, count) {
             }
         }
 
-        function generateCombinationWithNumber(number, numbers) {
+        function generateCombinationWithNumber(number, numbers, numbersPerGame = 6) {
             const otherNumbers = numbers.filter(n => n !== number);
             const combo = [number];
-            while (combo.length < 6) {
+            while (combo.length < numbersPerGame) {
                 const randomIndex = Math.floor(Math.random() * otherNumbers.length);
                 const selected = otherNumbers.splice(randomIndex, 1)[0];
                 combo.push(selected);
@@ -1662,7 +1676,7 @@ async function loadPreviousDraws(currentDraw, count) {
                         .split(/[\s,-]+/)
                         .map(n => parseInt(n))
                         .filter(n => !isNaN(n) && n >= 1 && n <= 60);
-                    return numbers.length === 6 ? numbers : null;
+                    return numbers.length >= 6 && numbers.length <= 15 ? numbers : null;
                 })
                 .filter(comb => comb !== null);
         }
