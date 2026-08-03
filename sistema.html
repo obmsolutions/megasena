@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBM Mega Analytics v2.0</title>
+    <script src="assets/vendor/jspdf.umd.min.js"></script>
+    <script src="assets/vendor/jspdf.plugin.autotable.min.js"></script>
+    <script src="assets/vendor/chart.umd.min.js"></script>
+    <script src="assets/vendor/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+    <div class="container">
+        <h1>OBM Mega Analytics v2.0</h1>
+
+        <div class="tabs">
+            <div class="tab active" onclick="openTab('tab1')">Seleção</div>
+            <div class="tab" onclick="openTab('tab2')">Desdobramento</div>
+            <div class="tab" onclick="openTab('tab3')">Filtros</div>
+            <div class="tab" onclick="openTab('tab5')">Conferir</div>
+            <div class="tab" onclick="openTab('tab6')">Estatísticas</div>
+            <div class="tab" onclick="openTab('tab7')">Filtro Estatístico</div>
+            <div class="tab" onclick="openTab('tab8')">Scanner</div>
+            <div class="tab" onclick="openTab('tab9')">Exclusão Ponderada</div>
+        </div>
+
+        <div id="tab1" class="tab-content active">
+            <h2>Selecione suas dezenas (6-60 números)</h2>
+            <div class="quadrants-container">
+                <div class="quadrant quadrant-1">
+                    <h3>Q1</h3>
+                    <div class="quadrant-grid" id="quadrant1Grid"></div>
+                </div>
+                <div class="quadrant quadrant-2">
+                    <h3>Q2</h3>
+                    <div class="quadrant-grid" id="quadrant2Grid"></div>
+                </div>
+                <div class="quadrant quadrant-3">
+                    <h3>Q3</h3>
+                    <div class="quadrant-grid" id="quadrant3Grid"></div>
+                </div>
+                <div class="quadrant quadrant-4">
+                    <h3>Q4</h3>
+                    <div class="quadrant-grid" id="quadrant4Grid"></div>
+                </div>
+            </div>
+            <div>
+                <button onclick="selectAllNumbers()">Surpresinha</button>
+                <button onclick="clearSelection()">Limpar</button>
+            </div>
+            <div>
+                <p>Dezenas selecionadas: <span id="selectedCount">0</span></p>
+                <div id="selectedNumbers"></div>
+            </div>
+        </div>
+
+        <div id="tab2" class="tab-content">
+            <h2>Configuração de Desdobramento</h2>
+            <div>
+                <label for="combinationsCount">Número de combinações:</label>
+                <input type="number" id="combinationsCount" min="1" max="1000" value="100">
+                <label for="numbersPerGame">Dezenas por jogo:</label>
+                <input type="number" id="numbersPerGame" min="6" max="15" value="6">
+            </div>
+            <div>
+                <button id="generateButton" onclick="generateCombinations()">Gerar Combinações</button>
+                <button id="exportButton" onclick="exportToTxt()">Exportar para TXT</button>
+                <button onclick="exportGenerationAudit()">Exportar Auditoria</button>
+                <button onclick="clearCombinations()">Limpar Combinações</button>
+            </div>
+            <div id="generationStats"></div>
+            <div>
+                <p>Combinações geradas: <span id="filteredCount">0</span></p>
+                <div id="results"></div>
+            </div>
+        </div>
+
+        <div id="tab3" class="tab-content">
+            <h2>Filtros Estatísticos</h2>
+            <p>Para jogos de 7 a 15 dezenas, os filtros de contagem e soma são proporcionalmente normalizados para o equivalente a um jogo de 6 dezenas.</p>
+            <div class="filter-section">
+                <h3>Filtro 1: Par/Ímpar</h3>
+                <p id="statsParImpar">Base até 3038: 3P-3I 30,7% | 4P-2I 24,4% | 2P-4I 24,0%</p>
+                <div class="filter-options" id="parImparOptions">
+                    <div class="filter-option selected" data-value="3-3">3P-3I</div>
+                    <div class="filter-option selected" data-value="2-4">2P-4I</div>
+                    <div class="filter-option selected" data-value="4-2">4P-2I</div>
+                    <div class="filter-option" data-value="1-5">1P-5I</div>
+                    <div class="filter-option" data-value="5-1">5P-1I</div>
+                    <div class="filter-option" data-value="0-6">0P-6I</div>
+                    <div class="filter-option" data-value="6-0">6P-0I</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 2: Soma das Dezenas</h3>
+                <p id="statsSoma">Base até 3038: 186-226 33,2% | 145-185 34,8% | 227-267 12,9% | 104-144 15,4%</p>
+                <div class="filter-options" id="somaOptions">
+                    <div class="filter-option selected" data-value="186-226">186-226</div>
+                    <div class="filter-option selected" data-value="145-185">145-185</div>
+                    <div class="filter-option selected" data-value="227-267">227-267</div>
+                    <div class="filter-option selected" data-value="104-144">104-144</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 3: Dezenas Repetidas</h3>
+                <p id="statsRepetidas">Base até 3038: 0 repetida 52,0% | 1 repetida 39,0% | 2+ repetidas 9,1%</p>
+                <div class="filter-options" id="repetidasOptions">
+                    <div class="filter-option selected" data-value="0">0 repetida</div>
+                    <div class="filter-option" data-value="1">1 repetida</div>
+                    <div class="filter-option" data-value="2">2+ repetidas</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 4: Fibonacci</h3>
+                <p id="statsFibonacci">Base até 3038: 0 41,5% | 1 41,4% | 2 14,9% | 3+ 2,1%</p>
+                <div class="filter-options" id="fibonacciOptions">
+                    <div class="filter-option selected" data-value="0">0 Fibonacci</div>
+                    <div class="filter-option selected" data-value="1">1 Fibonacci</div>
+                    <div class="filter-option selected" data-value="2">2 Fibonacci</div>
+                    <div class="filter-option" data-value="3">3 Fibonacci</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 5: Números Primos</h3>
+                <p id="statsPrimos">Base até 3038: 0 11,7% | 1 32,8% | 2 33,6% | 3 16,6% | 4+ 5,4%</p>
+                <div class="filter-options" id="primosOptions">
+                    <div class="filter-option selected" data-value="0">0 primo</div>
+                    <div class="filter-option selected" data-value="1">1 primo</div>
+                    <div class="filter-option selected" data-value="2">2 primos</div>
+                    <div class="filter-option selected" data-value="3">3 primos</div>
+                    <div class="filter-option" data-value="4">4 primos</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 6: Moldura</h3>
+                <p id="statsMoldura">Base até 3038: 1 11,9% | 2 26,7% | 3 32,3% | 4 21,0%</p>
+                <div class="filter-options" id="molduraOptions">
+                    <div class="filter-option selected" data-value="3">3 moldura</div>
+                    <div class="filter-option selected" data-value="4">4 moldura</div>
+                    <div class="filter-option selected" data-value="2">2 moldura</div>
+                    <div class="filter-option" data-value="1">1 moldura</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 7: Miolo</h3>
+                <p id="statsMiolo">Base até 3038: 1 5,8% | 2 21,0% | 3 32,3% | 4 26,7%</p>
+                <div class="filter-options" id="mioloOptions">
+                    <div class="filter-option selected" data-value="3">3 miolo</div>
+                    <div class="filter-option selected" data-value="4">4 miolo</div>
+                    <div class="filter-option selected" data-value="2">2 miolo</div>
+                    <div class="filter-option" data-value="1">1 miolo</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 8: Múltiplos de 3</h3>
+                <p id="statsMultiplos3">Base até 3038: 0 7,3% | 1 28,3% | 2 34,1% | 3 22,7% | 4+ 7,6%</p>
+                <div class="filter-options" id="multiplos3Options">
+                    <div class="filter-option selected" data-value="2">2 múltiplos</div>
+                    <div class="filter-option selected" data-value="1">1 múltiplo</div>
+                    <div class="filter-option selected" data-value="3">3 múltiplos</div>
+                    <div class="filter-option" data-value="0">0 múltiplos</div>
+                    <div class="filter-option" data-value="4">4 múltiplos</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 9: Múltiplos de 4</h3>
+                <p id="statsMultiplos4">Base até 3038: 0 17,6% | 1 35,1% | 2 30,7% | 3+ 16,6%</p>
+                <div class="filter-options" id="multiplos4Options">
+                    <div class="filter-option selected" data-value="1">1 múltiplo</div>
+                    <div class="filter-option selected" data-value="2">2 múltiplos</div>
+                    <div class="filter-option" data-value="0">0 múltiplos</div>
+                    <div class="filter-option" data-value="3">3 múltiplos</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 10: Quadrantes</h3>
+                <p id="statsQuadrantes">Base até 3038: 3 quadrantes 49,6% | 4 quadrantes 43,5%</p>
+                <div class="filter-options" id="quadrantesOptions">
+                    <div class="filter-option" data-value="3">3 quadrantes</div>
+                    <div class="filter-option selected" data-value="4">4 quadrantes</div>
+                    <div class="filter-option" data-value="2">2 quadrantes</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 11: Linhas Horizontais</h3>
+                <p id="statsLinhas">Faixas L1:01-10, L2:11-20, ..., L6:51-60. Os percentuais são atualizados ao carregar a base.</p>
+                <div class="filter-options" id="linhasOptions">
+                    <div class="filter-option" data-value="3">3 linhas</div>
+                    <div class="filter-option selected" data-value="4">4 linhas</div>
+                    <div class="filter-option selected" data-value="5">5 linhas</div>
+                    <div class="filter-option" data-value="6">6 linhas</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 12: Dezenas Sequenciais</h3>
+                <p id="statsSequenciais">0: não permite consecutivas | 2: permite somente um único par de dezenas consecutivas</p>
+                <div class="filter-options" id="sequenciaisOptions">
+                    <div class="filter-option selected" data-value="0">0 (Zero) Dezenas Consecutivas</div>
+                    <div class="filter-option" data-value="2">2 (Duas) Dezenas Consecutivas</div>
+                </div>
+            </div>
+            <div>
+                <button id="applyFiltersButton" onclick="applyFilters()">Aplicar Filtros</button>
+                <button onclick="resetFilters()">Desativar Todos os Filtros</button>
+                <button onclick="restoreRecommendedFilters()">Restaurar Recomendados</button>
+            </div>
+        </div>
+
+        <div id="tab5" class="tab-content">
+            <h2>Conferir Sorteio</h2>
+            <div>
+                <input type="file" id="fileInput" accept=".txt" class="hidden" onchange="updateFileInfo()">
+                <button onclick="document.getElementById('fileInput').click()">Carregar Jogos</button>
+                <span id="fileInfo">Nenhum arquivo selecionado</span>
+            </div>
+            <div class="check-container">
+                <div class="check-api">
+                    <h3>Conferir via API</h3>
+                    <div>
+                        <label for="drawNumber">Número do Concurso:</label>
+                        <input type="number" id="drawNumber" placeholder="Deixe em branco para o último">
+                        <button id="checkButton" onclick="checkResults()">Conferir</button>
+                    </div>
+                    <div id="checkResults" class="hidden">
+                        <h3>Resultado do Sorteio:</h3>
+                        <div id="drawResultDisplay"></div>
+                    </div>
+                </div>
+                <div class="check-manual">
+                    <h3>Conferir Manualmente</h3>
+                    <div class="manual-input-section">
+                        <div>
+                            <label for="manualDrawNumber">Concurso:</label>
+                            <input type="number" id="manualDrawNumber" placeholder="Ex: 1234">
+                        </div>
+                        <div>
+                            <label for="manualDrawDate">Data (DD/MM/AAAA):</label>
+                            <input type="text" id="manualDrawDate" placeholder="Ex: 18/04/2025">
+                        </div>
+                        <div>
+                            <label for="manualDrawNumbers">Dezenas Sorteadas (6 números):</label>
+                            <input type="text" id="manualDrawNumbers" placeholder="Ex: 04 15 18 41 47 53">
+                        </div>
+                        <button id="checkManualButton" onclick="checkManualResults()">Conferir Manualmente</button>
+                    </div>
+                </div>
+            </div>
+            <div id="resultsSummary" class="hidden">
+                <h3>Estatísticas:</h3>
+                <div id="resultSummary"></div>
+                <div>
+                    <button onclick="exportToPDF()">Exportar para PDF</button>
+                    <button onclick="exportToTxtCheck()">Exportar para TXT</button>
+                </div>
+                <h3>Detalhes dos Jogos:</h3>
+                <div id="detailedResults"></div>
+                <h3>Dezenas Selecionadas:</h3>
+                <div id="selectedNumbersCheck"></div>
+            </div>
+            <div id="errorContainer" class="hidden"></div>
+        </div>
+
+        <div id="tab6" class="tab-content">
+            <h2>Estatísticas e Análises</h2>
+            
+            <div class="config-section">
+                <h3>Configuração de Análise</h3>
+                
+                <label>Quantidade de sorteios a considerar:</label>
+                <select id="sorteiosAnalise">
+                    <option value="10">Últimos 10</option>
+                    <option value="30">Últimos 30</option>
+                    <option value="50" selected>Últimos 50</option>
+                    <option value="100">Últimos 100</option>
+                </select>
+
+                <label>Número de dezenas quentes/frias:</label>
+                <input type="number" id="topDezenas" min="5" max="30" value="10">
+                
+                <button onclick="atualizarAnalise()" style="margin-top: 10px;">Atualizar Análise</button>
+            </div>
+            
+            <div>
+                <h3>Números Quentes e Frias</h3>
+                <p>Quentes (vermelho): Mais sorteados | Frias (azul): Menos sorteadas</p>
+                <div id="hotColdNumbers" class="number-grid"></div>
+            </div>
+            <div>
+                <h3>Frequência dos Números</h3>
+                <canvas id="frequencyChart"></canvas>
+            </div>
+            <div>
+                <h3>Análise de Padrões</h3>
+                <div id="patternAnalysis"></div>
+            </div>
+        </div>
+        
+        <div id="tab7" class="tab-content">
+            <h2>Análise Estatística dos Filtros</h2>
+            
+            <div class="config-section">
+                <h3>Configuração da Análise</h3>
+                
+                <label>Quantidade de jogos anteriores a considerar (máximo 100):</label>
+                <input type="number" id="qtdJogosAnalise" min="10" max="100" value="50">
+                
+                <label>Selecione os filtros para análise:</label>
+                <div class="filter-options" id="filtrosAnaliseOptions">
+                    <div class="filter-option selected" data-value="parImpar">Par/Ímpar</div>
+                    <div class="filter-option selected" data-value="somaDezenas">Soma das Dezenas</div>
+                    <div class="filter-option selected" data-value="dezenasRepetidas">Dezenas Repetidas</div>
+                    <div class="filter-option selected" data-value="fibonacci">Fibonacci</div>
+                    <div class="filter-option selected" data-value="primos">Números Primos</div>
+                    <div class="filter-option selected" data-value="moldura">Moldura</div>
+                    <div class="filter-option selected" data-value="miolo">Miolo</div>
+                    <div class="filter-option selected" data-value="multiplos3">Múltiplos de 3</div>
+                    <div class="filter-option selected" data-value="multiplos4">Múltiplos de 4</div>
+                    <div class="filter-option selected" data-value="quadrantes">Quadrantes</div>
+                    <div class="filter-option selected" data-value="linhas">Linhas Horizontais</div>
+                    <div class="filter-option selected" data-value="sequenciais">Dezenas Sequenciais</div>
+                    <div class="filter-option selected" data-value="dezenas1a30">Dezenas 1-30</div>
+                    <div class="filter-option selected" data-value="dezenas31a60">Dezenas 31-60</div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button onclick="gerarAnaliseFiltros()">Gerar Análise</button>
+                    <button onclick="exportarAnaliseParaPDF()" style="background-color: #d32f2f;">Exportar para PDF</button>
+                </div>
+            </div>
+            
+            <div id="resultadoAnaliseFiltros">
+                <!-- Os resultados serão exibidos aqui -->
+            </div>
+        </div>
+        
+        <!-- Nova aba Scanner -->
+        <div id="tab8" class="tab-content">
+            <h2>Scanner de Concurso</h2>
+            
+            <div class="scanner-section">
+                <h3>Configuração do Scanner</h3>
+                
+                <label for="concursoScanner">Número do Concurso:</label>
+                <input type="number" id="concursoScanner" placeholder="Digite o número do concurso">
+                
+                <button onclick="executarScanner()" style="margin-top: 10px;">Executar Scanner</button>
+                <button id="exportScannerButton" onclick="exportarScannerParaPDF()" style="background-color: #d32f2f; margin-top: 10px; display: none;">Exportar para PDF</button>
+            </div>
+            
+            <div id="scannerResult" class="scanner-result hidden">
+                <h3>Resultado do Scanner</h3>
+                <div id="scannerResultContent"></div>
+            </div>
+        </div>
+
+        <div id="tab9" class="tab-content">
+            <h2>Módulo de Exclusão Ponderada</h2>
+            <p class="warning-note">Ferramenta de apoio estatístico. A pontuação organiza dezenas e concentra a carteira, mas não altera a probabilidade individual de cada combinação nem garante premiação.</p>
+
+            <div class="exclusion-card">
+                <h3>1. Carregar base histórica</h3>
+                <div class="exclusion-controls">
+                    <label>Planilha Mega-Sena (.xlsx)
+                        <input type="file" id="weightedHistoryFile" accept=".xlsx,.xls,.csv">
+                    </label>
+                    <label>Concurso-base
+                        <input type="number" id="weightedBaseDraw" min="2" placeholder="Último da planilha">
+                    </label>
+                    <label>Perfil de exclusão
+                        <select id="weightedProfile">
+                            <option value="10">Conservador — excluir 10</option>
+                            <option value="12" selected>Equilibrado — excluir 12</option>
+                            <option value="15">Equilibrado ampliado — excluir 15</option>
+                            <option value="18">Arrojado — excluir 18</option>
+                            <option value="20">Muito arrojado — excluir 20</option>
+                        </select>
+                    </label>
+                </div>
+                <div style="margin-top:12px">
+                    <button onclick="loadWeightedHistoryFile()">Carregar planilha</button>
+                    <button onclick="useCurrentApiHistory()">Usar dados já carregados</button>
+                </div>
+                <div id="weightedStatus" class="status-box">Carregue a planilha histórica fornecida com o pacote. Para um retroteste confiável, utilize a base completa.</div>
+            </div>
+
+            <div class="exclusion-layout" style="margin-top:16px">
+                <div class="exclusion-card">
+                    <h3>2. Pesos do modelo</h3>
+                    <div class="weight-grid">
+                        <label class="weight-row"><span>Frequência últimos 30</span><input id="wFreq30" type="number" value="10" min="0" max="100"></label>
+                        <label class="weight-row"><span>Frequência últimos 100</span><input id="wFreq100" type="number" value="20" min="0" max="100"></label>
+                        <label class="weight-row"><span>Tendência últimos 300</span><input id="wFreq300" type="number" value="10" min="0" max="100"></label>
+                        <label class="weight-row"><span>Atraso moderado</span><input id="wDelay" type="number" value="10" min="0" max="100"></label>
+                        <label class="weight-row"><span>Penalidade: último concurso</span><input id="wLast1" type="number" value="10" min="0" max="100"></label>
+                        <label class="weight-row"><span>Penalidade: penúltimo</span><input id="wLast2" type="number" value="5" min="0" max="100"></label>
+                        <label class="weight-row"><span>Frequência histórica</span><input id="wGlobal" type="number" value="15" min="0" max="100"></label>
+                        <label class="weight-row"><span>Rede de associações</span><input id="wPairs" type="number" value="10" min="0" max="100"></label>
+                        <label class="weight-row"><span>Estabilidade entre janelas</span><input id="wStability" type="number" value="10" min="0" max="100"></label>
+                    </div>
+                    <div style="margin-top:12px">
+                        <button onclick="runWeightedRanking()">Calcular ranking</button>
+                        <button onclick="resetWeightedWeights()">Restaurar pesos</button>
+                    </div>
+                </div>
+
+                <div class="exclusion-card">
+                    <h3>3. Listas recomendadas</h3>
+                    <div id="weightedSummary" class="metric-grid"></div>
+                    <div id="weightedLists" style="margin-top:12px">O resultado aparecerá após o cálculo.</div>
+                    <div style="margin-top:12px">
+                        <button onclick="applyWeightedKeptNumbers()">Aplicar mantidas na Seleção</button>
+                        <button onclick="exportWeightedTxt()">Exportar análise TXT</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="exclusion-card" style="margin-top:16px">
+                <h3>4. Ranking das 60 dezenas</h3>
+                <div id="weightedRanking" class="ranking-table-wrap">Aguardando cálculo.</div>
+            </div>
+
+            <div class="exclusion-card" style="margin-top:16px">
+                <h3>5. Retroteste sem informação futura</h3>
+                <div class="exclusion-controls">
+                    <label>Quantidade de concursos avaliados
+                        <input id="weightedBacktestCount" type="number" min="50" max="2000" value="500">
+                    </label>
+                    <label>Exclusões no retroteste
+                        <select id="weightedBacktestExclude">
+                            <option value="10">10</option><option value="12" selected>12</option><option value="15">15</option><option value="18">18</option><option value="20">20</option>
+                        </select>
+                    </label>
+                    <div><button onclick="runWeightedBacktest()">Executar retroteste</button></div>
+                </div>
+                <div id="weightedBacktestStatus" class="status-box">O teste usa somente os concursos anteriores a cada sorteio avaliado.</div>
+                <div id="weightedBacktestResult"></div>
+            </div>
+        </div>
+    </div>
+
+    
+
+    
+
+    
+    <script src="data/mega-sena-data.js"></script>
+    <script src="assets/js/core.js"></script>
+    <script src="assets/js/data-store.js"></script>
+    <script src="assets/js/statistics.js"></script>
+    <script src="assets/js/checker.js"></script>
+    <script src="assets/js/auth-guard.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
