@@ -133,6 +133,7 @@
             document.getElementById('results').innerHTML = '';
             document.getElementById('filteredCount').textContent = '0';
             document.getElementById('generationStats').innerHTML = '';
+            setGenerationStatus('Aguardando a geração das combinações.');
             showSuccess('Combinações limpas! Você pode gerar novas combinações.');
         }
 
@@ -285,20 +286,92 @@ async function loadLastDraws() {
         }
 
         function getFilterConfig() {
-            const ids = ['parImparOptions','somaOptions','repetidasOptions','fibonacciOptions','primosOptions','molduraOptions','mioloOptions','multiplos3Options','multiplos4Options','quadrantesOptions','linhasOptions','sequenciaisOptions'];
+            const ids = ['parImparOptions','somaOptions','repetidasOptions','fibonacciOptions','primosOptions','molduraOptions','mioloOptions','multiplos3Options','multiplos4Options','quadrantesOptions','linhasOptions','sequenciaisOptions','colunasVaziasOptions'];
             return Object.fromEntries(ids.map(id => [id, getSelectedOptions(id)]));
         }
 
         function runGeneratorWorker(numbers, gameSize, count, maxAttempts, onProgress) {
+            const options = getFilterConfig();
+            const fallback = () => runGeneratorInMainThread(numbers, gameSize, count, maxAttempts, options, lastDrawNumbers, onProgress);
+
+            if (typeof Worker === 'undefined') return fallback();
+
             return new Promise((resolve, reject) => {
-                const worker = new Worker('assets/workers/generator-worker.js');
+                let worker;
+                let finished = false;
+
+                const runFallback = () => {
+                    if (finished) return;
+                    finished = true;
+                    if (worker) worker.terminate();
+                    fallback().then(resolve, reject);
+                };
+
+                try {
+                    const workerUrl = new URL('assets/workers/generator-worker.js', window.location.href);
+                    worker = new Worker(workerUrl);
+                } catch (error) {
+                    runFallback();
+                    return;
+                }
+
                 worker.onmessage = event => {
                     if (event.data.type === 'progress') onProgress?.(event.data);
-                    if (event.data.type === 'done') { worker.terminate(); resolve(event.data); }
+                    if (event.data.type === 'done' && !finished) {
+                        finished = true;
+                        worker.terminate();
+                        resolve(event.data);
+                    }
                 };
-                worker.onerror = error => { worker.terminate(); reject(new Error(`Falha no processador de geração: ${error.message}`)); };
-                worker.postMessage({numbers, size:gameSize, count, maxAttempts, options:getFilterConfig(), lastDraw:lastDrawNumbers});
+                worker.onerror = error => {
+                    if (typeof error.preventDefault === 'function') error.preventDefault();
+                    runFallback();
+                };
+                worker.postMessage({numbers, size:gameSize, count, maxAttempts, options, lastDraw:lastDrawNumbers});
             });
+        }
+
+        function runGeneratorInMainThread(numbers, gameSize, count, maxAttempts, options, lastDraw, onProgress) {
+            return new Promise((resolve, reject) => {
+                const frequencies = Object.fromEntries(numbers.map(n => [n, 0]));
+                const seen = new Set();
+                const generated = [];
+                let attempts = 0;
+
+                const processBatch = () => {
+                    try {
+                        const batchLimit = Math.min(maxAttempts, attempts + 2000);
+                        while (generated.length < count && attempts < batchLimit) {
+                            const combo = generateCoverageCandidate(numbers, gameSize, frequencies);
+                            const key = combo.join(',');
+                            if (!seen.has(key) && OBMCore.applyFilters(combo, options, lastDraw)) {
+                                seen.add(key);
+                                generated.push(combo);
+                                combo.forEach(n => frequencies[n]++);
+                            }
+                            attempts++;
+                        }
+
+                        onProgress?.({ generated: generated.length, attempts });
+                        if (generated.length >= count || attempts >= maxAttempts) {
+                            resolve({ combinations: generated, attempts, frequencies, fallback: true });
+                            return;
+                        }
+                        setTimeout(processBatch, 0);
+                    } catch (error) {
+                        reject(new Error(`Falha ao gerar as combinações: ${error.message}`));
+                    }
+                };
+
+                processBatch();
+            });
+        }
+
+        function setGenerationStatus(message, isError = false) {
+            const status = document.getElementById('generationStatus');
+            if (!status) return;
+            status.textContent = message;
+            status.className = `status-box${isError ? ' error' : ''}`;
         }
 
         async function generateCombinations() {
@@ -306,6 +379,7 @@ async function loadLastDraws() {
             const originalText = generateButton.innerHTML;
             generateButton.innerHTML = '<span class="loading"></span> Gerando...';
             generateButton.disabled = true;
+            setGenerationStatus('Validando a seleção e os filtros...');
 
             try {
                 if (selectedNumbers.length < 6) throw new Error('Selecione pelo menos 6 números!');
@@ -320,8 +394,10 @@ async function loadLastDraws() {
 
                 const sortedNumbers = [...selectedNumbers].sort((a, b) => a - b);
                 const maxAttempts = Math.max(15000, count * 800);
+                setGenerationStatus(`Gerando 0 de ${count} combinações...`);
                 const workerResult = await runGeneratorWorker(sortedNumbers, numbersPerGame, count, maxAttempts, progress => {
                     generateButton.innerHTML = `<span class="loading"></span> Gerando ${progress.generated}/${count}...`;
+                    setGenerationStatus(`Gerando ${progress.generated} de ${count} combinações...`);
                 });
                 const selectedCombinations = workerResult.combinations;
                 const attempts = workerResult.attempts;
@@ -341,14 +417,18 @@ async function loadLastDraws() {
                     </tbody></table></div>`;
 
                 if (allCombinations.length === 0) {
+                    setGenerationStatus('Nenhuma combinação atende aos filtros selecionados. Desative ou flexibilize alguns filtros.', true);
                     showError('Nenhuma combinação atende aos filtros selecionados. Desative ou flexibilize alguns filtros.');
                 } else if (allCombinations.length < count) {
+                    setGenerationStatus(`Geração parcial: ${allCombinations.length} de ${count} combinações válidas encontradas.`);
                     showError(`Geração parcial: foram solicitados ${count} jogos, mas apenas ${allCombinations.length} combinações válidas foram encontradas. Flexibilize os filtros para completar a carteira.`);
                 } else {
+                    setGenerationStatus(`${allCombinations.length} combinações geradas e validadas com sucesso.`);
                     showSuccess(`${allCombinations.length} combinações geradas e validadas com sucesso.`);
                 }
             } catch (error) {
                 console.error('Erro ao gerar combinações:', error);
+                setGenerationStatus(error.message, true);
                 showError(error.message);
             } finally {
                 generateButton.innerHTML = originalText;
@@ -397,7 +477,7 @@ async function loadLastDraws() {
         function restoreRecommendedFilters() {
             const recommended = {
                 parImparOptions: ['3-3','2-4','4-2'],
-                somaOptions: ['104-144','145-185','186-226','227-267'],
+                somaOptions: ['120-240'],
                 repetidasOptions: ['0','1'],
                 fibonacciOptions: ['0','1','2'],
                 primosOptions: ['1','2','3'],
@@ -406,8 +486,9 @@ async function loadLastDraws() {
                 multiplos3Options: ['1','2','3'],
                 multiplos4Options: ['0','1','2','3'],
                 quadrantesOptions: ['3','4'],
-                linhasOptions: ['3','4','5'],
-                sequenciaisOptions: ['0','2']
+                linhasOptions: ['1','2'],
+                sequenciaisOptions: ['0','2'],
+                colunasVaziasOptions: ['5']
             };
             document.querySelectorAll('#tab3 .filter-option').forEach(opt => opt.classList.remove('selected'));
             Object.entries(recommended).forEach(([id, values]) => {
@@ -869,6 +950,9 @@ async function loadLastDraws() {
                     case 'sequenciais':
                         resultadosHTML += analisarSequenciais(jogosAnalisados);
                         break;
+                    case 'colunasVazias':
+                        resultadosHTML += analisarColunasVazias(jogosAnalisados);
+                        break;
                     case 'dezenas1a30':
                         resultadosHTML += analisarDezenas1a30(jogosAnalisados);
                         break;
@@ -999,10 +1083,11 @@ async function loadLastDraws() {
                 'multiplos3': 'Filtro 8: Múltiplos de 3',
                 'multiplos4': 'Filtro 9: Múltiplos de 4',
                 'quadrantes': 'Filtro 10: Quadrantes',
-                'linhas': 'Filtro 11: Linhas Horizontais',
+                'linhas': 'Filtro 11: Linhas Vazias',
                 'sequenciais': 'Filtro 12: Dezenas Sequenciais',
-                'dezenas1a30': 'Filtro 13: Dezenas 1-30',
-                'dezenas31a60': 'Filtro 14: Dezenas 31-60'
+                'colunasVazias': 'Filtro 13: Colunas Vazias',
+                'dezenas1a30': 'Filtro 14: Dezenas 1-30',
+                'dezenas31a60': 'Filtro 15: Dezenas 31-60'
             };
             return nomes[codigoFiltro] || codigoFiltro;
         }
@@ -1033,10 +1118,7 @@ async function loadLastDraws() {
 
         function analisarSomaDezenas(jogos) {
             const faixas = {
-                '104-144': { min: 104, max: 144, count: 0 },
-                '145-185': { min: 145, max: 185, count: 0 },
-                '186-226': { min: 186, max: 226, count: 0 },
-                '227-267': { min: 227, max: 267, count: 0 }
+                '120-240': { min: 120, max: 240, count: 0 }
             };
             let foraDasFaixas = 0;
             
@@ -1225,14 +1307,34 @@ async function loadLastDraws() {
             return formatarResultados(contagem, jogos.length);
         }
 
+        function analisarColunasVazias(jogos) {
+            const contagem = {
+                '4': 0,
+                '5': 0,
+                '6': 0,
+                '7': 0,
+                '8': 0,
+                '9': 0
+            };
+
+            jogos.forEach(jogo => {
+                const numeros = jogo.listaDezenas.map(Number);
+                const colunasOcupadas = new Set(numeros.map(num => ((num - 1) % 10) + 1));
+                const colunasVazias = 10 - colunasOcupadas.size;
+                contagem[colunasVazias.toString()]++;
+            });
+
+            return formatarResultados(contagem, jogos.length);
+        }
+
         function analisarLinhas(jogos) {
             const contagem = {
+                '0': 0,
                 '1': 0,
                 '2': 0,
                 '3': 0,
                 '4': 0,
-                '5': 0,
-                '6': 0
+                '5': 0
             };
             
             jogos.forEach(jogo => {
@@ -1247,7 +1349,8 @@ async function loadLastDraws() {
                     });
                 });
                 
-                contagem[linhas.size.toString()]++;
+                const linhasVazias = 6 - linhas.size;
+                contagem[linhasVazias.toString()]++;
             });
             
             return formatarResultados(contagem, jogos.length);
@@ -1400,7 +1503,7 @@ async function loadLastDraws() {
                 else if (QUADRANT_4.includes(num)) quadrantes.add(4);
             });
             
-            // Linhas horizontais
+            // Linhas vazias
             const linhas = new Set();
             numeros.forEach(num => {
                 Object.keys(HORIZONTAL_LINES).forEach(linha => {
@@ -1409,6 +1512,10 @@ async function loadLastDraws() {
                     }
                 });
             });
+
+            // Colunas vazias (mesmo final no volante = mesma coluna)
+            const colunasOcupadas = new Set(numeros.map(num => ((num - 1) % 10) + 1));
+            const colunasVazias = 10 - colunasOcupadas.size;
             
             // Dezenas sequenciais
             let sequencias = 0;
@@ -1448,7 +1555,8 @@ async function loadLastDraws() {
                     <p><strong>Múltiplos de 3:</strong> ${multiplos3} (${numeros.filter(n => n % 3 === 0).map(n => n.toString().padStart(2, '0')).join(', ') || 'Nenhum'})</p>
                     <p><strong>Múltiplos de 4:</strong> ${multiplos4} (${numeros.filter(n => n % 4 === 0).map(n => n.toString().padStart(2, '0')).join(', ') || 'Nenhum'})</p>
                     <p><strong>Quadrantes:</strong> ${quadrantes.size} (${Array.from(quadrantes).join(', ')})</p>
-                    <p><strong>Linhas Horizontais:</strong> ${linhas.size} (${Array.from(linhas).join(', ')})</p>
+                    <p><strong>Linhas Vazias:</strong> ${6 - linhas.size}</p>
+                    <p><strong>Colunas Vazias:</strong> ${colunasVazias}</p>
                     <p><strong>Sequências de números consecutivos:</strong> ${sequencias}</p>
                     <p><strong>Dezenas entre 1-30:</strong> ${dezenas1a30}</p>
                     <p><strong>Dezenas entre 31-60:</strong> ${dezenas31a60}</p>
@@ -1469,7 +1577,8 @@ async function loadLastDraws() {
                     multiplos3,
                     multiplos4,
                     quadrantes: quadrantes.size,
-                    linhas: linhas.size,
+                    linhas: 6 - linhas.size,
+                    colunasVazias,
                     sequencias,
                     dezenas1a30,
                     dezenas31a60
@@ -1560,7 +1669,8 @@ async function loadLastDraws() {
                 ['Múltiplos de 3', analysis.multiplos3],
                 ['Múltiplos de 4', analysis.multiplos4],
                 ['Quadrantes', analysis.quadrantes],
-                ['Linhas Horizontais', analysis.linhas],
+                ['Linhas Vazias', analysis.linhas],
+                ['Colunas Vazias', analysis.colunasVazias],
                 ['Sequências', analysis.sequencias],
                 ['Dezenas 1-30', analysis.dezenas1a30],
                 ['Dezenas 31-60', analysis.dezenas31a60]
@@ -1621,6 +1731,7 @@ async function loadLastDraws() {
         function updateFilterGuidance(draws) {
             if (!Array.isArray(draws) || draws.length < 100) return;
             const pct = (value, total = draws.length) => `${(100 * value / total).toFixed(1).replace('.', ',')}%`;
+            const pct2 = (value, total = draws.length) => `${(100 * value / total).toFixed(2).replace('.', ',')}%`;
             const countBy = fn => {
                 const result = {};
                 draws.forEach(draw => { const key = fn(draw.listaDezenas); result[key] = (result[key] || 0) + 1; });
@@ -1629,7 +1740,7 @@ async function loadLastDraws() {
             const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
             const last = draws[draws.length - 1].numero;
             const parity = countBy(nums => nums.filter(n => n % 2 === 0).length);
-            const sums = countBy(nums => { const s=nums.reduce((a,b)=>a+b,0); return s<104?'fora':s<=144?'104-144':s<=185?'145-185':s<=226?'186-226':s<=267?'227-267':'fora'; });
+            const sums = countBy(nums => { const s=nums.reduce((a,b)=>a+b,0); return s>=120&&s<=240?'120-240':'fora'; });
             const fib = countBy(nums => Math.min(3, nums.filter(n => FIBONACCI_NUMBERS.includes(n)).length));
             const primes = countBy(nums => Math.min(4, nums.filter(n => PRIME_NUMBERS.includes(n)).length));
             const frame = countBy(nums => nums.filter(n => MOLDURA_NUMBERS.includes(n)).length);
@@ -1637,7 +1748,8 @@ async function loadLastDraws() {
             const m3 = countBy(nums => Math.min(4, nums.filter(n => n%3===0).length));
             const m4 = countBy(nums => Math.min(3, nums.filter(n => n%4===0).length));
             const quadrants = countBy(nums => new Set(nums.map(n => QUADRANT_1.includes(n)?1:QUADRANT_2.includes(n)?2:QUADRANT_3.includes(n)?3:4)).size);
-            const lines = countBy(nums => new Set(nums.map(n => Math.ceil(n/10))).size);
+            const lines = countBy(nums => 6-new Set(nums.map(n => Math.ceil(n/10))).size);
+            const emptyColumns = countBy(nums => 10-new Set(nums.map(n => ((n-1)%10)+1)).size);
             const seq = countBy(nums => Math.min(2, countConsecutiveAdjacencies(nums)));
             const repeated = {0:0,1:0,2:0};
             for (let i=1;i<draws.length;i++) {
@@ -1646,7 +1758,7 @@ async function loadLastDraws() {
                 repeated[value]++;
             }
             setText('statsParImpar', `Base até ${last}: 3P-3I ${pct(parity[3]||0)} | 4P-2I ${pct(parity[4]||0)} | 2P-4I ${pct(parity[2]||0)}`);
-            setText('statsSoma', `Base até ${last}: 104-144 ${pct(sums['104-144']||0)} | 145-185 ${pct(sums['145-185']||0)} | 186-226 ${pct(sums['186-226']||0)} | 227-267 ${pct(sums['227-267']||0)} | fora ${pct(sums.fora||0)}`);
+            setText('statsSoma', `Base até ${last}: faixa 120-240 em ${pct2(sums['120-240']||0)} dos concursos`);
             setText('statsRepetidas', `Base até ${last}: 0 ${pct(repeated[0],draws.length-1)} | 1 ${pct(repeated[1],draws.length-1)} | 2+ ${pct(repeated[2],draws.length-1)}`);
             setText('statsFibonacci', `Base até ${last}: 0 ${pct(fib[0]||0)} | 1 ${pct(fib[1]||0)} | 2 ${pct(fib[2]||0)} | 3+ ${pct(fib[3]||0)}`);
             setText('statsPrimos', `Base até ${last}: 0 ${pct(primes[0]||0)} | 1 ${pct(primes[1]||0)} | 2 ${pct(primes[2]||0)} | 3 ${pct(primes[3]||0)} | 4+ ${pct(primes[4]||0)}`);
@@ -1655,7 +1767,8 @@ async function loadLastDraws() {
             setText('statsMultiplos3', `Base até ${last}: 0 ${pct(m3[0]||0)} | 1 ${pct(m3[1]||0)} | 2 ${pct(m3[2]||0)} | 3 ${pct(m3[3]||0)} | 4+ ${pct(m3[4]||0)}`);
             setText('statsMultiplos4', `Base até ${last}: 0 ${pct(m4[0]||0)} | 1 ${pct(m4[1]||0)} | 2 ${pct(m4[2]||0)} | 3+ ${pct(m4[3]||0)}`);
             setText('statsQuadrantes', `Base até ${last}: 2 ${pct(quadrants[2]||0)} | 3 ${pct(quadrants[3]||0)} | 4 ${pct(quadrants[4]||0)}`);
-            setText('statsLinhas', `Base até ${last}: 3 faixas ${pct(lines[3]||0)} | 4 ${pct(lines[4]||0)} | 5 ${pct(lines[5]||0)} | 6 ${pct(lines[6]||0)}`);
+            setText('statsLinhas', `Base até ${last}: 1 linha vazia ${pct2(lines[1]||0)} | 2 linhas vazias ${pct2(lines[2]||0)}`);
+            setText('statsColunasVazias', `Base até ${last}: 4 colunas vazias ${pct2(emptyColumns[4]||0)} | 5 colunas vazias ${pct2(emptyColumns[5]||0)} | 6 colunas vazias ${pct2(emptyColumns[6]||0)}`);
             setText('statsSequenciais', `Base até ${last}: sem consecutivas ${pct(seq[0]||0)} | um par ${pct(seq[1]||0)} | dois pares/trinca ${pct(seq[2]||0)} (rejeitados pelo filtro)`);
         }
 

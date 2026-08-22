@@ -43,7 +43,11 @@
         const quadrants=new Set(combo.map(n=>Q.findIndex(q=>q.has(n))+1));
         if(!matchesExact(selected(options,'quadrantesOptions'),quadrants.size))return false;
         const lines=new Set(combo.map(n=>Math.ceil(n/10)));
-        if(!matchesExact(selected(options,'linhasOptions'),lines.size))return false;
+        const emptyLines=6-lines.size;
+        if(!matchesExact(selected(options,'linhasOptions'),emptyLines))return false;
+        const columns=new Set(combo.map(n=>((n-1)%10)+1));
+        const emptyColumns=10-columns.size;
+        if(!matchesExact(selected(options,'colunasVaziasOptions'),emptyColumns))return false;
         const seq=selected(options,'sequenciaisOptions'), adj=countConsecutiveAdjacencies(combo);
         if(seq.length&&!((seq.includes('0')&&adj===0)||(seq.includes('2')&&adj===1)))return false;
         return true;

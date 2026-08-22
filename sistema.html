@@ -13,6 +13,7 @@
 <body>
     <div class="container">
         <h1>OBM Mega Analytics v2.0</h1>
+        <div id="errorContainer" class="hidden" role="status" aria-live="polite"></div>
 
         <div class="tabs">
             <div class="tab active" onclick="openTab('tab1')">Seleção</div>
@@ -69,6 +70,7 @@
                 <button onclick="exportGenerationAudit()">Exportar Auditoria</button>
                 <button onclick="clearCombinations()">Limpar Combinações</button>
             </div>
+            <div id="generationStatus" class="status-box" role="status" aria-live="polite">Aguardando a geração das combinações.</div>
             <div id="generationStats"></div>
             <div>
                 <p>Combinações geradas: <span id="filteredCount">0</span></p>
@@ -94,12 +96,9 @@
             </div>
             <div class="filter-section">
                 <h3>Filtro 2: Soma das Dezenas</h3>
-                <p id="statsSoma">Base até 3038: 186-226 33,2% | 145-185 34,8% | 227-267 12,9% | 104-144 15,4%</p>
+                <p id="statsSoma">Base até 3038: faixa 120-240 em 86,57% dos concursos</p>
                 <div class="filter-options" id="somaOptions">
-                    <div class="filter-option selected" data-value="186-226">186-226</div>
-                    <div class="filter-option selected" data-value="145-185">145-185</div>
-                    <div class="filter-option selected" data-value="227-267">227-267</div>
-                    <div class="filter-option selected" data-value="104-144">104-144</div>
+                    <div class="filter-option selected" data-value="120-240">120 a 240</div>
                 </div>
             </div>
             <div class="filter-section">
@@ -183,13 +182,11 @@
                 </div>
             </div>
             <div class="filter-section">
-                <h3>Filtro 11: Linhas Horizontais</h3>
-                <p id="statsLinhas">Faixas L1:01-10, L2:11-20, ..., L6:51-60. Os percentuais são atualizados ao carregar a base.</p>
+                <h3>Filtro 11: Linhas Vazias</h3>
+                <p id="statsLinhas">Base até 3038: 1 linha vazia 27,25% | 2 linhas vazias 51,61%</p>
                 <div class="filter-options" id="linhasOptions">
-                    <div class="filter-option" data-value="3">3 linhas</div>
-                    <div class="filter-option selected" data-value="4">4 linhas</div>
-                    <div class="filter-option selected" data-value="5">5 linhas</div>
-                    <div class="filter-option" data-value="6">6 linhas</div>
+                    <div class="filter-option selected" data-value="1">Uma Linha Vazia</div>
+                    <div class="filter-option selected" data-value="2">Duas Linhas Vazias</div>
                 </div>
             </div>
             <div class="filter-section">
@@ -198,6 +195,15 @@
                 <div class="filter-options" id="sequenciaisOptions">
                     <div class="filter-option selected" data-value="0">0 (Zero) Dezenas Consecutivas</div>
                     <div class="filter-option" data-value="2">2 (Duas) Dezenas Consecutivas</div>
+                </div>
+            </div>
+            <div class="filter-section">
+                <h3>Filtro 13: Colunas Vazias</h3>
+                <p id="statsColunasVazias">Base até 3038: 4 colunas vazias 18,96% | 5 colunas vazias 48,91% | 6 colunas vazias 27,55%</p>
+                <div class="filter-options" id="colunasVaziasOptions">
+                    <div class="filter-option" data-value="4">Quatro Colunas Vazias</div>
+                    <div class="filter-option selected" data-value="5">Cinco Colunas Vazias</div>
+                    <div class="filter-option" data-value="6">Seis Colunas Vazias</div>
                 </div>
             </div>
             <div>
@@ -258,7 +264,6 @@
                 <h3>Dezenas Selecionadas:</h3>
                 <div id="selectedNumbersCheck"></div>
             </div>
-            <div id="errorContainer" class="hidden"></div>
         </div>
 
         <div id="tab6" class="tab-content">
@@ -317,8 +322,9 @@
                     <div class="filter-option selected" data-value="multiplos3">Múltiplos de 3</div>
                     <div class="filter-option selected" data-value="multiplos4">Múltiplos de 4</div>
                     <div class="filter-option selected" data-value="quadrantes">Quadrantes</div>
-                    <div class="filter-option selected" data-value="linhas">Linhas Horizontais</div>
+                    <div class="filter-option selected" data-value="linhas">Linhas Vazias</div>
                     <div class="filter-option selected" data-value="sequenciais">Dezenas Sequenciais</div>
+                    <div class="filter-option selected" data-value="colunasVazias">Colunas Vazias</div>
                     <div class="filter-option selected" data-value="dezenas1a30">Dezenas 1-30</div>
                     <div class="filter-option selected" data-value="dezenas31a60">Dezenas 31-60</div>
                 </div>

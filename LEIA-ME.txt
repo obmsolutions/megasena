@@ -24,5 +24,10 @@ NOVIDADES DA FASE 2
 - Testes automatizados de filtros, importação e integridade da base.
 - Estrutura pronta para evolução e backend futuro.
 
+AJUSTE CONTROLADO DOS FILTROS
+- Filtro 2: uma única faixa de soma entre 120 e 240.
+- Filtro 11: opções de uma ou duas linhas vazias.
+- Filtro 13: opções de quatro, cinco ou seis colunas vazias; cinco fica pré-selecionada.
+
 AVISO
 A análise estatística organiza escolhas e carteiras, mas não garante premiação. A Mega-Sena continua sendo um jogo de azar.
