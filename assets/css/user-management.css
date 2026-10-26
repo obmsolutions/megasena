@@ -1,0 +1,39 @@
+:root {
+    --blue: #075fca;
+    --blue-dark: #064a9b;
+    --ink: #172033;
+    --muted: #667085;
+    --line: #d9e2ef;
+    --surface: #fff;
+    --background: #f5f8fc;
+    --red: #c53d3d;
+    --shadow: 0 8px 24px rgba(17,38,74,.08);
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 28px 18px; font-family: Inter, "Segoe UI", Arial, sans-serif; color: var(--ink); background: var(--background); }
+.container { max-width: 1120px; margin: 0 auto; }
+h1 { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 22px; color: var(--blue); font-size: clamp(27px,4vw,40px); letter-spacing: -.03em; }
+h2 { margin: 0 0 18px; color: var(--blue-dark); font-size: 21px; }
+.section { margin-bottom: 16px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+.form-group { margin-bottom: 15px; }
+label { display: block; margin-bottom: 6px; font-weight: 700; }
+input, select { width: 100%; max-width: 380px; padding: 10px 11px; border: 1px solid #b8c5d6; border-radius: 8px; color: var(--ink); background: #fff; font: inherit; }
+input:focus, select:focus { outline: 3px solid rgba(7,95,202,.14); border-color: var(--blue); }
+input[type="checkbox"] { width: auto; margin-right: 6px; }
+button { padding: 10px 15px; border: 1px solid var(--blue); border-radius: 8px; color: #fff; background: var(--blue); font: inherit; font-weight: 750; cursor: pointer; }
+button:hover { background: var(--blue-dark); }
+.logout-btn { margin-left: auto; border-color: var(--red); background: var(--red); }
+.logout-btn:hover { background: #a82f2f; }
+table { width: 100%; margin-top: 12px; border-collapse: collapse; overflow: hidden; border-radius: 9px; }
+th, td { padding: 10px 11px; border-bottom: 1px solid var(--line); text-align: left; }
+th { color: var(--blue-dark); background: #eff5fc; font-size: 13px; }
+tr:nth-child(even) { background: #f9fbfd; }
+.error-message, .success-message { margin-top: 10px; font-size: 14px; }
+.error-message { color: #a52d2d; }
+.success-message { color: #126b49; }
+@media (max-width: 620px) {
+    body { padding: 20px 12px; }
+    h1 { align-items: stretch; flex-direction: column; }
+    .logout-btn { width: 100%; margin: 0; }
+    .section { padding: 17px; overflow-x: auto; }
+}

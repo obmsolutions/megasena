@@ -1,0 +1,61 @@
+OBM MEGA ANALYTICS v2.1 — DESDOBRAMENTO POR GRUPOS
+=======================
+
+EDIÇÃO 2.1.0
+- Mantém a lógica da versão v2.0 estável aprovada.
+- Adota o padrão visual e responsivo do OBM Lotofácil Analytics v1.0.
+- Acrescenta indicador de filtros ativos e melhorias de acessibilidade.
+- Preserva os 13 filtros, geração, conferência, estatísticas, scanner e exclusão ponderada.
+
+NOVO DESDOBRAMENTO POR GRUPOS
+- Na aba Desdobramento, escolha Modo Tradicional ou Modo por Grupos.
+- O modo tradicional permanece sendo o fluxo original da v2.0.
+- O universo geral vem da aba Seleção e pode conter até as 60 dezenas.
+- Cada grupo recebe uma base própria, configurável entre 7 e 15 dezenas.
+- Os jogos simples de 6 dezenas são desdobrados exclusivamente dentro da base de cada grupo.
+- Métodos: Mínimo Matemático, Distribuição Equilibrada e Cercamento Total.
+- Garantias: quadra, quina ou sena, verificadas separadamente em cada grupo.
+- A Distribuição Equilibrada também aceita universos maiores sem garantia matemática.
+- Com 60 dezenas selecionadas, o sistema cria grupos-base aleatórios e equilibrados usando esse universo geral.
+- Todos os jogos finais precisam atender aos filtros ativos e a união dos jogos de cada grupo utiliza todas as dezenas de sua base.
+- A quantidade de grupos e os jogos por grupo definem o total: por exemplo, 30 x 2 = 60 jogos inéditos.
+- A garantia só aparece como comprovada depois da conferência exaustiva das combinações C(g,6) de cada grupo-base.
+- O TXT usa o mesmo formato do modo tradicional, sem nomes de grupos nem numeração dos jogos.
+- A auditoria JSON preserva internamente os grupos, parâmetros e comprovações.
+- Limites seguros: 6.000 resultados possíveis nos modos com garantia e 50.000 jogos no cercamento total.
+
+COMO EXECUTAR
+Opção recomendada:
+1. Instale o Node.js 18 ou superior.
+2. Abra o terminal dentro desta pasta.
+3. No Windows, dê dois cliques em INICIAR.bat. Alternativamente execute: npm run serve
+4. Abra no navegador: http://localhost:8080
+
+Também é possível abrir index.html diretamente. A base histórica e as bibliotecas essenciais estão incluídas no pacote. Alguns navegadores podem restringir Workers quando páginas são abertas por file://; nesse caso use o servidor local acima.
+
+TESTES AUTOMATIZADOS
+Execute: npm test
+
+NOVIDADES DA FASE 2
+- HTML, CSS e JavaScript separados.
+- Motor central compartilhado de filtros e importação.
+- Base local com 3.038 concursos em JSON e JavaScript offline.
+- Cache local e sincronização incremental com a API da Caixa.
+- Geração de jogos em Web Worker.
+- Retroteste em Web Worker.
+- Bibliotecas de gráficos, planilhas e PDF incluídas localmente.
+- Testes automatizados de filtros, importação e integridade da base.
+- Estrutura pronta para evolução e backend futuro.
+
+AJUSTE CONTROLADO DOS FILTROS
+- Filtro 2: uma única faixa de soma entre 120 e 240.
+- Filtro 11: opções de uma ou duas linhas vazias.
+- Filtro 13: opções de quatro, cinco ou seis colunas vazias; cinco fica pré-selecionada.
+
+PUBLICAÇÃO NO GITHUB PAGES
+- Publique o conteúdo desta pasta com index.html na raiz do repositório.
+- As bibliotecas e a base histórica estão incluídas localmente.
+- Após substituir uma versão anterior, atualize o navegador com Ctrl + F5.
+
+AVISO
+A análise estatística organiza escolhas e carteiras, mas não garante premiação. A Mega-Sena continua sendo um jogo de azar.
